@@ -47,11 +47,14 @@ class IrPluginTest {
 @JvmInline
 value class Holder(val theValue: String)
 
-fun main() {
-  println(Holder("prefix" + 1 + 2 + (3 + 4)))
-  println("prefix" + 1 + 2 + (3 + 4))
+fun <H : Holder> foo(holder: Holder): Holder {
+   return holder
 }
 
+fun main() {
+  val h = Holder("v")
+  foo<Holder>(h)
+}
 
 """.trimIndent()
         )
