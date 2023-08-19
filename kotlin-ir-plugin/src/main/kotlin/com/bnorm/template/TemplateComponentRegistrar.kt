@@ -47,6 +47,7 @@ class TemplateComponentRegistrar(
     val string = configuration.get(TemplateCommandLineProcessor.ARG_STRING, defaultString)
     val file = configuration.get(TemplateCommandLineProcessor.ARG_FILE, defaultFile)
 
-    IrGenerationExtension.registerExtension(project, TemplateIrGenerationExtension(messageCollector, string, file))
+//    IrGenerationExtension.registerExtension(project, TemplateIrGenerationExtension(messageCollector, string, file))
+    IrGenerationExtension.registerExtension(project, MyIrGenerationExtension(messageCollector))
   }
 }

@@ -31,18 +31,28 @@ class IrPluginTest {
     val result = compile(
         sourceFile = SourceFile.kotlin(
             "main.kt", """
-annotation class DebugLog
+//annotation class DebugLog
+//
+//fun main() {
+//    println(greet())
+//    println(greet(name = "Kotlin IR"))
+//}
+//
+//@DebugLog
+//fun greet(greeting: String = "Hello", name: String = "World"): String {
+//    Thread.sleep(15)
+//    return "${'$'}greeting, ${'$'}name!"
+//}
+
+@JvmInline
+value class Holder(val theValue: String)
 
 fun main() {
-    println(greet())
-    println(greet(name = "Kotlin IR"))
+  println(Holder("prefix" + 1 + 2 + (3 + 4)))
+  println("prefix" + 1 + 2 + (3 + 4))
 }
 
-@DebugLog
-fun greet(greeting: String = "Hello", name: String = "World"): String {
-    Thread.sleep(15)
-    return "${'$'}greeting, ${'$'}name!"
-}
+
 """.trimIndent()
         )
     )

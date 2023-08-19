@@ -1,21 +1,21 @@
 buildscript {
-  extra["kotlin_plugin_id"] = "com.bnorm.template.kotlin-ir-plugin"
+    extra["kotlin_plugin_id"] = "com.bnorm.template.kotlin-ir-plugin"
 }
 
 plugins {
-  kotlin("jvm") version "1.9.0" apply false
-  id("org.jetbrains.dokka") version "1.8.20" apply false
-  id("com.gradle.plugin-publish") version "1.0.0" apply false
-  id("com.github.gmazzo.buildconfig") version "4.1.2" apply false
+    kotlin("jvm") version "1.9.0" apply false
+    id("org.jetbrains.dokka") version "1.8.20" apply false
+    id("com.gradle.plugin-publish") version "1.0.0" apply false
+    id("com.github.gmazzo.buildconfig") version "4.1.2" apply false
 }
 
 allprojects {
-  group = "com.bnorm.template"
-  version = "0.1.0-SNAPSHOT"
+    group = "com.bnorm.template"
+    version = "0.1.0-SNAPSHOT"
 }
 
 subprojects {
-  repositories {
-    mavenCentral()
-  }
+    repositories {
+        mavenCentral()
+    }
 }
