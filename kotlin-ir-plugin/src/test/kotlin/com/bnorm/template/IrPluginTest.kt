@@ -62,10 +62,14 @@ fun main() {
   val hStrEq = hStr.equals(hStr)
   val hObjEq = hObj.equals(hObj)
 
+  val extracted = hObj.theValue
+
+  val m = listOf<Holder>()
+  
+
   
 
 //  h == h
-//  h.theValue
 }
 
 """.trimIndent()
