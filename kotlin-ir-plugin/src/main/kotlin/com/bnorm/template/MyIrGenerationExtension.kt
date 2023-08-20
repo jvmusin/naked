@@ -80,35 +80,28 @@ class WholeVisitor(
     }
 
     inner class FunctionCallTransformer : IrElementTransformerVoidWithContext() {
-        private val holderHashCode = pluginContext.referenceFunctions(FqName("Holder.hashCode")).single()
-        private val stringHashCode = pluginContext.referenceFunctions(FqName("kotlin.String.hashCode")).single()
-
-        private val holderToString = pluginContext.referenceFunctions(FqName("Holder.toString")).single()
-        private val stringToString = pluginContext.referenceFunctions(FqName("kotlin.String.toString")).single()
-
-        private val holderEquals = pluginContext.referenceFunctions(FqName("Holder.equals")).single()
-        private val stringEquals = pluginContext.referenceFunctions(FqName("kotlin.String.equals")).single()
+        private val replacements = with(pluginContext) {
+            val replacedFunctionNames = arrayOf("hashCode", "toString", "equals")
+            val sourceType = "Holder"
+            val targetType = "kotlin.String"
+            fun fn(type: String, f: String) = referenceFunctions(FqName("${type}.${f}")).single()
+            replacedFunctionNames.associate { func ->
+                fn(sourceType, func) to fn(targetType, func)
+            }
+        }
 
         override fun visitCall(expression: IrCall): IrExpression {
-            if (expression.symbol == holderHashCode) {
-                val replacedCall = DeclarationIrBuilder(pluginContext, expression.symbol).irCall(stringHashCode).also { call ->
+            val replacement = replacements[expression.symbol]
+            if (replacement != null) {
+                val replacedCall = DeclarationIrBuilder(pluginContext, expression.symbol).irCall(replacement).also { call ->
                     call.dispatchReceiver = expression.dispatchReceiver
+                    repeat(expression.valueArgumentsCount) { arg ->
+                        call.putValueArgument(arg, expression.getValueArgument(arg))
+                    }
                 }
                 return super.visitCall(replacedCall)
             }
-            if (expression.symbol == holderToString) {
-                val replacedCall = DeclarationIrBuilder(pluginContext, expression.symbol).irCall(stringToString).also { call ->
-                    call.dispatchReceiver = expression.dispatchReceiver
-                }
-                return super.visitCall(replacedCall)
-            }
-            if (expression.symbol == holderEquals) {
-                val replacedCall = DeclarationIrBuilder(pluginContext, expression.symbol).irCall(stringEquals).also { call ->
-                    call.dispatchReceiver = expression.dispatchReceiver
-                    call.putValueArgument(0, expression.getValueArgument(0))
-                }
-                return super.visitCall(replacedCall)
-            }
+
             return super.visitCall(expression)
         }
     }
