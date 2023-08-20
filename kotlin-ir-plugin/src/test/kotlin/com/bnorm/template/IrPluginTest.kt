@@ -14,23 +14,20 @@
  * limitations under the License.
  */
 
-@file:OptIn(ExperimentalCompilerApi::class, ExperimentalCompilerApi::class, ExperimentalCompilerApi::class)
-
 package com.bnorm.template
 
 import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.SourceFile
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
-import org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi
 import org.junit.Test
 import kotlin.test.assertEquals
 
 class IrPluginTest {
-  @Test
-  fun `IR plugin success`() {
-    val result = compile(
-        sourceFile = SourceFile.kotlin(
-            "main.kt", """
+    @Test
+    fun `IR plugin success`() {
+        val result = compile(
+                sourceFile = SourceFile.kotlin(
+                        "main.kt", """
 //annotation class DebugLog
 //
 //fun main() {
@@ -52,36 +49,51 @@ fun <H : Holder> foo(holder: Holder): Holder {
 }
 
 fun main() {
-  val h = Holder("v")
-  foo<Holder>(h)
+  val hStr = "a"
+  val hObj = Holder(hStr)
+//  foo<Holder>(h)
+  val hStrHash = hStr.hashCode()
+  val hObjHash = hObj.hashCode()
+  println(hStrHash)
+  println(hObjHash)
+  val hStrToString = hStr.toString()
+  val hObjToString = hObj.toString()
+
+  val hStrEq = hStr.equals(hStr)
+  val hObjEq = hObj.equals(hObj)
+
+  
+
+//  h == h
+//  h.theValue
 }
 
 """.trimIndent()
+                )
         )
-    )
-    assertEquals(KotlinCompilation.ExitCode.OK, result.exitCode)
+        assertEquals(KotlinCompilation.ExitCode.OK, result.exitCode)
 
-    val kClazz = result.classLoader.loadClass("MainKt")
-    val main = kClazz.declaredMethods.single { it.name == "main" && it.parameterCount == 0 }
-    main.invoke(null)
-  }
+        val kClazz = result.classLoader.loadClass("MainKt")
+        val main = kClazz.declaredMethods.single { it.name == "main" && it.parameterCount == 0 }
+        main.invoke(null)
+    }
 }
 
 fun compile(
-    sourceFiles: List<SourceFile>,
-    plugin: ComponentRegistrar = TemplateComponentRegistrar(),
+        sourceFiles: List<SourceFile>,
+        plugin: ComponentRegistrar = TemplateComponentRegistrar(),
 ): KotlinCompilation.Result {
-  return KotlinCompilation().apply {
-    sources = sourceFiles
-    useIR = true
-    componentRegistrars = listOf(plugin)
-    inheritClassPath = true
-  }.compile()
+    return KotlinCompilation().apply {
+        sources = sourceFiles
+        useIR = true
+        componentRegistrars = listOf(plugin)
+        inheritClassPath = true
+    }.compile()
 }
 
 fun compile(
-    sourceFile: SourceFile,
-    plugin: ComponentRegistrar = TemplateComponentRegistrar(),
+        sourceFile: SourceFile,
+        plugin: ComponentRegistrar = TemplateComponentRegistrar(),
 ): KotlinCompilation.Result {
-  return compile(listOf(sourceFile), plugin)
+    return compile(listOf(sourceFile), plugin)
 }
