@@ -10,13 +10,8 @@ import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.backend.js.utils.valueArguments
 import org.jetbrains.kotlin.ir.builders.irCall
-import org.jetbrains.kotlin.ir.declarations.IrFunction
-import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
-import org.jetbrains.kotlin.ir.declarations.IrValueDeclaration
-import org.jetbrains.kotlin.ir.declarations.IrVariable
-import org.jetbrains.kotlin.ir.expressions.IrCall
-import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
-import org.jetbrains.kotlin.ir.expressions.IrExpression
+import org.jetbrains.kotlin.ir.declarations.*
+import org.jetbrains.kotlin.ir.expressions.*
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrType
@@ -29,8 +24,6 @@ import org.jetbrains.kotlin.name.FqName
 
 class MyIrGenerationExtension(private val messageCollector: MessageCollector) : IrGenerationExtension {
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
-//        moduleFragment.accept(ValueClassFinderVisitor(messageCollector), null)
-
         repeat(8) {
             messageCollector.report(CompilerMessageSeverity.INFO, "BEFORE:")
         }
@@ -60,12 +53,18 @@ class WholeVisitor(
         if (this !is IrSimpleType) return this
         return buildSimpleType {
             arguments = arguments.map {
-                if (it is IrType) {
-                    it.fixedType() as IrTypeArgument
-                } else {
-                    it
+                when (it) {
+                    is IrType -> it.fixedType() as IrTypeArgument
+                    else -> it
                 }
             }
+        }
+    }
+
+    inline fun <reified T> T.fixedTypeMaybe(): T {
+        return when (this) {
+            is IrType -> this.fixedType() as T
+            else -> this
         }
     }
 
@@ -99,41 +98,16 @@ class WholeVisitor(
 
     inner class VariableTypeTransformer : IrElementTransformerVoidWithContext() {
         override fun visitVariable(declaration: IrVariable): IrStatement {
-//            declaration.remapTypes(object : TypeRemapper {
-//                override fun enterScope(irTypeParametersContainer: IrTypeParametersContainer) {
-//                }
-//
-//                override fun leaveScope() {
-//                }
-//
-//                override fun remapType(type: IrType): IrType = type.fixType()
-//            })
-
-
-            declaration.fixType()
-
-            val type = declaration.type
-            if (type is IrSimpleType) {
-                declaration.type = type.buildSimpleType {
-                    messageCollector.report(CompilerMessageSeverity.INFO, "hello")
-                    arguments = arguments.map {
-                        if (it is IrSimpleType) {
-                            it.fixedType() as IrTypeArgument
-                        } else it
-                    }
-                }
-            }
-
             return super.visitVariable(declaration.fixType())
         }
     }
 
     inner class FunctionDeclarationTransformer : IrElementTransformerVoidWithContext() {
         override fun visitFunctionNew(declaration: IrFunction): IrStatement {
+            declaration.extensionReceiverParameter?.fixType()
             declaration.valueParameters.forEach { it.fixType() }
             declaration.typeParameters.forEach { tp -> tp.superTypes = tp.superTypes.fixType() }
             if (declaration.returnType.isHolder()) declaration.returnType = underlyingReplacementType
-            // TODO: check the receiver of extension methods
             return super.visitFunctionNew(declaration)
         }
     }

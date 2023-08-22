@@ -46,12 +46,15 @@ value class Holder(val theValue: String)
 
 fun <H : Holder> foo(holder: Holder): Holder {
    return holder
-}
+} // TODO: test local functions
+
+fun Holder.happyEquals(other: Holder) = this == other 
+
 
 fun main() {
   val hStr = "a"
   val hObj = Holder(hStr)
-//  foo<Holder>(h)
+  foo<Holder>(hObj)
   val hStrHash = hStr.hashCode()
   val hObjHash = hObj.hashCode()
   println(hStrHash)
@@ -66,10 +69,10 @@ fun main() {
 
   val m = listOf<Holder>()
   
-
+  require(hObj.happyEquals(hObj))
   
 
-//  h == h
+  hObj == hObj
 }
 
 """.trimIndent()
