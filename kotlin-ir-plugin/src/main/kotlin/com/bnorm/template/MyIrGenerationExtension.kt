@@ -10,15 +10,22 @@ import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.backend.js.utils.valueArguments
 import org.jetbrains.kotlin.ir.builders.irCall
-import org.jetbrains.kotlin.ir.declarations.*
-import org.jetbrains.kotlin.ir.expressions.*
+import org.jetbrains.kotlin.ir.declarations.IrFunction
+import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
+import org.jetbrains.kotlin.ir.declarations.IrTypeParametersContainer
+import org.jetbrains.kotlin.ir.declarations.IrValueDeclaration
+import org.jetbrains.kotlin.ir.expressions.IrCall
+import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
+import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.IrTypeArgument
 import org.jetbrains.kotlin.ir.types.classifierOrNull
 import org.jetbrains.kotlin.ir.types.impl.buildSimpleType
+import org.jetbrains.kotlin.ir.util.TypeRemapper
 import org.jetbrains.kotlin.ir.util.dump
+import org.jetbrains.kotlin.ir.util.remapTypes
 import org.jetbrains.kotlin.ir.visitors.IrElementVisitorVoid
 import org.jetbrains.kotlin.name.FqName
 
@@ -74,11 +81,8 @@ class WholeVisitor(
         val getSymbol = requireNotNull(visitor.getSymbol)
 
         moduleFragment.transform(ConstructorTransformer(), null)
-        moduleFragment.transform(ExpressionTypeTransformer(), null)
-        moduleFragment.transform(VariableTypeTransformer(), null)
-        moduleFragment.transform(FunctionDeclarationTransformer(), null)
         moduleFragment.transform(OverriddenFunctionCallTransformer(getSymbol), null)
-        moduleFragment.transform(FunctionCallTransformer(), null)
+        moduleFragment.transform(TypeRemapperTransformer(), null)
     }
 
     inner class ConstructorTransformer : IrElementTransformerVoidWithContext() {
@@ -90,24 +94,17 @@ class WholeVisitor(
         }
     }
 
-    inner class ExpressionTypeTransformer : IrElementTransformerVoidWithContext() {
-        override fun visitExpression(expression: IrExpression): IrExpression {
-            return super.visitExpression(expression.fixType())
-        }
-    }
-
-    inner class VariableTypeTransformer : IrElementTransformerVoidWithContext() {
-        override fun visitVariable(declaration: IrVariable): IrStatement {
-            return super.visitVariable(declaration.fixType())
-        }
-    }
-
-    inner class FunctionDeclarationTransformer : IrElementTransformerVoidWithContext() {
+    inner class TypeRemapperTransformer : IrElementTransformerVoidWithContext() {
         override fun visitFunctionNew(declaration: IrFunction): IrStatement {
-            declaration.extensionReceiverParameter?.fixType()
-            declaration.valueParameters.forEach { it.fixType() }
-            declaration.typeParameters.forEach { tp -> tp.superTypes = tp.superTypes.fixType() }
-            if (declaration.returnType.isHolder()) declaration.returnType = underlyingReplacementType
+            declaration.remapTypes(object : TypeRemapper {
+                override fun enterScope(irTypeParametersContainer: IrTypeParametersContainer) {
+                }
+
+                override fun leaveScope() {
+                }
+
+                override fun remapType(type: IrType): IrType = type.fixedType()
+            })
             return super.visitFunctionNew(declaration)
         }
     }
@@ -125,29 +122,16 @@ class WholeVisitor(
 
         override fun visitCall(expression: IrCall): IrExpression {
             if (expression.symbol == getSymbol) {
-                return super.visitExpression(expression.dispatchReceiver!!)
+                return visitExpression(expression.dispatchReceiver!!)
             }
             replacements[expression.symbol]?.let { replacement ->
-                val replacedCall = DeclarationIrBuilder(pluginContext, expression.symbol).irCall(replacement).also { call ->
+                val replacedCall = DeclarationIrBuilder(pluginContext, currentScope!!.scope.scopeOwnerSymbol).irCall(replacement).also { call ->
                     call.dispatchReceiver = expression.dispatchReceiver
                     repeat(expression.valueArgumentsCount) { arg ->
                         call.putValueArgument(arg, expression.getValueArgument(arg))
                     }
-                    repeat(expression.typeArgumentsCount) {
-                        expression.putTypeArgument(it, expression.getTypeArgument(it)?.fixedType())
-                    }
                 }
-                return super.visitCall(replacedCall)
-            }
-            messageCollector.report(CompilerMessageSeverity.INFO, "Function call " + expression.symbol + "#" + expression.symbol.hashCode())
-            return super.visitCall(expression)
-        }
-    }
-
-    inner class FunctionCallTransformer() : IrElementTransformerVoidWithContext() {
-        override fun visitCall(expression: IrCall): IrExpression {
-            repeat(expression.typeArgumentsCount) {
-                expression.putTypeArgument(it, expression.getTypeArgument(it)?.fixedType())
+                return visitCall(replacedCall)
             }
             return super.visitCall(expression)
         }

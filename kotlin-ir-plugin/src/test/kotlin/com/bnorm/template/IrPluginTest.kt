@@ -46,7 +46,7 @@ value class Holder(val theValue: String)
 
 fun <H : Holder> foo(holder: Holder): Holder {
    return holder
-} // TODO: test local functions
+}
 
 fun Holder.happyEquals(other: Holder) = this == other 
 
@@ -68,11 +68,16 @@ fun main() {
   val extracted = hObj.theValue
 
   val m = listOf<Holder>()
-  
+
   require(hObj.happyEquals(hObj))
-  
 
   hObj == hObj
+
+  fun Holder.local(other: Holder): Holder {
+    return Holder(theValue + other.theValue)
+  }
+
+  require(Holder("aba").local(Holder("caba")) == Holder("abacaba"))
 }
 
 """.trimIndent()
