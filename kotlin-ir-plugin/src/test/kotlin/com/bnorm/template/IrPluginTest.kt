@@ -41,7 +41,10 @@ class IrPluginTest {
 //    return "${'$'}greeting, ${'$'}name!"
 //}
 
+annotation class InlineThisClass
+
 @JvmInline
+@InlineThisClass
 value class Holder(val theValue: String)
 
 fun <H : Holder> foo(holder: Holder): Holder {
@@ -50,6 +53,10 @@ fun <H : Holder> foo(holder: Holder): Holder {
 
 fun Holder.happyEquals(other: Holder) = this == other 
 
+class Outside {
+  var hNullable: Holder? = Holder("aba")
+  var hNormal: Holder = Holder("abad")
+}
 
 fun main() {
   val hStr = "a"
@@ -78,6 +85,12 @@ fun main() {
   }
 
   require(Holder("aba").local(Holder("caba")) == Holder("abacaba"))
+  require(Outside().hNormal == Holder("abad"))
+  require(Outside().hNullable == Holder("aba"))
+  val o = Outside()
+  o.hNullable = null
+  require(o.hNullable == null)
+  require(o.hNullable === null)
 }
 
 """.trimIndent()
