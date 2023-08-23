@@ -18,6 +18,7 @@ package com.bnorm.template
 
 import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.SourceFile
+import org.intellij.lang.annotations.Language
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.junit.Test
 import kotlin.test.assertEquals
@@ -102,6 +103,94 @@ fun main() {
         val main = kClazz.declaredMethods.single { it.name == "main" && it.parameterCount == 0 }
         main.invoke(null)
     }
+    @Test
+    fun testBulk() {
+        test("""
+annotation class InlineThisClass
+
+@JvmInline
+@InlineThisClass
+value class Holder(val theValue: String)
+
+fun <H : Holder> foo(holder: Holder): Holder {
+   return holder
+}
+
+fun Holder.happyEquals(other: Holder) = this == other 
+
+class Outside {
+  var hNullable: Holder? = Holder("aba")
+  var hNormal: Holder = Holder("abad")
+}
+
+fun main() {
+  val hStr = "a"
+  val hObj = Holder(hStr)
+  foo<Holder>(hObj)
+  val hStrHash = hStr.hashCode()
+  val hObjHash = hObj.hashCode()
+  println(hStrHash)
+  println(hObjHash)
+  val hStrToString = hStr.toString()
+  val hObjToString = hObj.toString()
+
+  val hStrEq = hStr.equals(hStr)
+  val hObjEq = hObj.equals(hObj)
+
+  val extracted = hObj.theValue
+
+  val m = listOf<Holder>()
+
+  require(hObj.happyEquals(hObj))
+
+  hObj == hObj
+
+  fun Holder.local(other: Holder): Holder {
+    return Holder(theValue + other.theValue)
+  }
+
+  require(Holder("aba").local(Holder("caba")) == Holder("abacaba"))
+  require(Outside().hNormal == Holder("abad"))
+  require(Outside().hNullable == Holder("aba"))
+  val o = Outside()
+  o.hNullable = null
+  require(o.hNullable == null)
+}
+    """.trimIndent())
+    }
+
+    @Test
+    fun testNestedClasses() {
+        test("""    
+annotation class InlineThisClass
+
+@JvmInline
+@InlineThisClass
+value class A(val a: String)
+
+@JvmInline
+@InlineThisClass
+value class C(val b: B)
+
+@JvmInline
+@InlineThisClass
+value class B(val a: A)
+
+fun main() {
+  require(C(B(A("aba"))).b.a == C(B(A("aba"))).b.a)
+}
+        """.trimIndent())
+    }
+}
+
+fun test(@Language("kotlin") sourceCode: String) {
+    val result = compile(sourceFile = SourceFile.kotlin("main.kt", sourceCode))
+
+    assertEquals(KotlinCompilation.ExitCode.OK, result.exitCode)
+
+    val kClazz = result.classLoader.loadClass("MainKt")
+    val main = kClazz.declaredMethods.single { it.name == "main" && it.parameterCount == 0 }
+    main.invoke(null)
 }
 
 fun compile(

@@ -6,11 +6,12 @@ import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
-import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.backend.js.utils.valueArguments
 import org.jetbrains.kotlin.ir.builders.irCall
-import org.jetbrains.kotlin.ir.declarations.*
+import org.jetbrains.kotlin.ir.declarations.IrDeclarationBase
+import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
+import org.jetbrains.kotlin.ir.declarations.IrTypeParametersContainer
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
@@ -21,10 +22,7 @@ import org.jetbrains.kotlin.ir.types.*
 import org.jetbrains.kotlin.ir.types.impl.buildSimpleType
 import org.jetbrains.kotlin.ir.util.TypeRemapper
 import org.jetbrains.kotlin.ir.util.dump
-import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.remapTypes
-import org.jetbrains.kotlin.ir.visitors.IrElementVisitorVoid
-import org.jetbrains.kotlin.ir.visitors.acceptChildrenVoid
 import org.jetbrains.kotlin.ir.visitors.acceptVoid
 import org.jetbrains.kotlin.name.FqName
 
@@ -46,16 +44,16 @@ class WholeVisitor(
         private val annotationClass: IrClassSymbol,
 ) {
     fun run(moduleFragment: IrModuleFragment) {
-        val classFinder = ValueClassFinderVisitor(messageCollector, annotationClass)
+        val classFinder = ValueClassFinderVisitor(annotationClass)
         moduleFragment.acceptVoid(classFinder)
 
-        for ((classType, data) in classFinder.foundClasses) {
-            moduleFragment.transform(ConstructorTransformer(data.constructorSymbol), null)
-            moduleFragment.transform(OverriddenFunctionCallTransformer(data.getSymbol), null)
+        for (classThings in classFinder.getFoundClassesSortedFromLeafs()) {
+            moduleFragment.transform(ConstructorTransformer(classThings.constructorSymbol), null)
+            moduleFragment.transform(OverriddenFunctionCallTransformer(classThings.getSymbol, classThings.classType, classThings.innerType), null)
 
             // TODO: Check nullable backing fields
-            moduleFragment.transform(TypeRemapperTransformer(classType, data.innerValueType), null)
-            moduleFragment.transform(TypeRemapperTransformer(classType.makeNullable(), data.innerValueType.makeNullable()), null)
+            moduleFragment.transform(TypeRemapperTransformer(classThings.classType, classThings.innerType), null)
+            moduleFragment.transform(TypeRemapperTransformer(classThings.classType.makeNullable(), classThings.innerType.makeNullable()), null)
         }
     }
 
@@ -96,11 +94,11 @@ class WholeVisitor(
         }
     }
 
-    inner class OverriddenFunctionCallTransformer(private val getSymbol: IrFunctionSymbol) : IrElementTransformerVoidWithContext() {
+    inner class OverriddenFunctionCallTransformer(private val getSymbol: IrFunctionSymbol, private val sourceType: IrType, private val innerType: IrType) : IrElementTransformerVoidWithContext() {
         private val replacements = run {
             val replacedFunctionNames = arrayOf("hashCode", "toString", "equals")
-            val sourceType = "Holder"
-            val targetType = "kotlin.String"
+            val sourceType = sourceType.classFqName!!.asString()
+            val targetType = innerType.classFqName!!.asString()
             fun fn(type: String, f: String) = pluginContext.referenceFunctions(FqName("${type}.${f}")).single()
             replacedFunctionNames.associate { func ->
                 fn(sourceType, func) to fn(targetType, func)
@@ -125,55 +123,3 @@ class WholeVisitor(
     }
 }
 
-data class ValueClassFields(
-        val getSymbol: IrFunctionSymbol,
-        val constructorSymbol: IrConstructorSymbol,
-        val innerValueType: IrType,
-)
-
-class ValueClassFinderVisitor(private val messageCollector: MessageCollector, private val annotationClass: IrClassSymbol) : IrElementVisitorVoid {
-    val foundClasses = mutableMapOf<IrType, ValueClassFields>()
-
-    override fun visitElement(element: IrElement) {
-        element.acceptChildren(this, null)
-    }
-
-    override fun visitClass(declaration: IrClass) {
-        if (declaration.hasAnnotation(annotationClass)) {
-            val visitor = ClassVisitor()
-            declaration.acceptVoid(visitor)
-            foundClasses[declaration.symbol.defaultType] = ValueClassFields(visitor.getSymbol!!, visitor.constructorSymbol!!, visitor.innerType!!)
-        }
-        super.visitClass(declaration)
-    }
-
-    inner class ClassVisitor : IrElementVisitorVoid {
-        var getSymbol: IrFunctionSymbol? = null
-        var constructorSymbol: IrConstructorSymbol? = null
-        var innerType: IrType? = null
-
-        override fun visitElement(element: IrElement) {
-            element.acceptChildrenVoid(this)
-        }
-
-        override fun visitConstructor(declaration: IrConstructor) {
-            require(constructorSymbol == null)
-            constructorSymbol = declaration.symbol
-
-            val innerType = declaration.valueParameters.single().type
-            require(!innerType.isPrimitiveType())
-            this.innerType = innerType
-
-            super.visitConstructor(declaration)
-        }
-
-        override fun visitFunction(declaration: IrFunction) {
-            // TODO: Use some other method
-            if (declaration.name.asString().contains("get-")) {
-                require(getSymbol == null)
-                getSymbol = declaration.symbol
-            }
-            super.visitFunction(declaration)
-        }
-    }
-}
