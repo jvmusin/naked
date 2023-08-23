@@ -20,6 +20,7 @@ import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.SourceFile
 import org.intellij.lang.annotations.Language
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
+import org.junit.Ignore
 import org.junit.Test
 import kotlin.test.assertEquals
 
@@ -27,8 +28,8 @@ class IrPluginTest {
     @Test
     fun `IR plugin success`() {
         val result = compile(
-                sourceFile = SourceFile.kotlin(
-                        "main.kt", """
+            sourceFile = SourceFile.kotlin(
+                "main.kt", """
 //annotation class DebugLog
 //
 //fun main() {
@@ -91,11 +92,10 @@ fun main() {
   val o = Outside()
   o.hNullable = null
   require(o.hNullable == null)
-  require(o.hNullable === null)
 }
 
 """.trimIndent()
-                )
+            )
         )
         assertEquals(KotlinCompilation.ExitCode.OK, result.exitCode)
 
@@ -103,9 +103,187 @@ fun main() {
         val main = kClazz.declaredMethods.single { it.name == "main" && it.parameterCount == 0 }
         main.invoke(null)
     }
+
+
+    @Test
+    fun testOverriddenMethods() {
+        test(
+            """
+annotation class InlineThisClass
+
+@JvmInline
+@InlineThisClass
+value class A(val value: String)
+
+fun main() {
+  require(A("a") == A("a"))
+  require(A("a").equals(A("a")))
+  require(A("a").hashCode() == 97)
+  require(A("a").toString() == "a")
+}
+        """.trimIndent()
+        )
+    }
+
+    @Test
+    fun testTypeParameters() {
+        test(
+            """
+annotation class InlineThisClass
+
+@JvmInline
+@InlineThisClass
+value class A(val value: String)
+
+fun <T : A> T.foo(a: T): T = A(value + a.value) as T
+
+fun main() {
+  require(A("a").foo(A("b")) == A("ab"))
+}
+        """.trimIndent()
+        )
+    }
+
+    @Test
+    fun testClassField() {
+        test(
+            """
+annotation class InlineThisClass
+
+@JvmInline
+@InlineThisClass
+value class A(val value: String)
+
+data class D(val a: A) {
+  var b: A = A("b")
+}
+
+fun main() {
+  require(D(A("a")).b.value == "b")
+  val d = D(A("a"))
+  d.b = A("c")
+  require(d.b == A("c"))
+}
+        """.trimIndent()
+        )
+    }
+
+    @Test
+    fun testClassCalls() {
+        test(
+            """
+annotation class InlineThisClass
+
+@JvmInline
+@InlineThisClass
+value class A(val value: String)
+
+fun main() {
+  require(A::class == kotlin.String::class)
+  require(A::class.java == java.lang.String::class.java)
+}
+        """.trimIndent()
+        )
+    }
+
+    @Test
+    @Ignore("Companion objects and nested things are not supported yet")
+    fun testCompanionObject() {
+        test(
+            """
+annotation class InlineThisClass
+
+@JvmInline
+@InlineThisClass
+value class A(val value: String) {
+  companion object {
+    val B = A("b")
+  }
+}
+
+fun main() {
+  println(A.B)
+}
+        """.trimIndent()
+        )
+    }
+
+
+    @Test
+    fun testTypeAlias() {
+        test(
+            """
+annotation class InlineThisClass
+
+@JvmInline
+@InlineThisClass
+value class A(val value: String)
+
+typealias B = A
+
+fun <T : B> T.foo(a: T): T = B(value + a.value) as T
+
+fun main() {
+  require(B("a").foo(B("b")) == B("ab"))
+}
+        """.trimIndent()
+        )
+    }
+
+    @Test
+    fun testNullableValue() {
+        test(
+            """
+annotation class InlineThisClass
+
+@JvmInline
+@InlineThisClass
+value class A(val value: String?)
+
+fun main() {
+  require(A("a") != A(null))
+  require(A(null) != A("a"))
+  require(A(null) == A(null))
+  require(A("a") != A("b"))
+  require(A("a") == A("a"))
+}
+        """.trimIndent()
+        )
+    }
+
+    @Test
+    fun testFunctionArgument() {
+        test(
+            """
+annotation class InlineThisClass
+
+@JvmInline
+@InlineThisClass
+value class A(val value: String)
+
+fun foo1(arg: A): A {
+  return A(arg.value + arg.value)
+}
+fun foo2(arg: A): A = A(arg.value + arg.value)
+fun foo3(arg: A) = A(arg.value + arg.value)
+fun A.foo4() = A(value + value)
+fun A.foo5(arg: A) = A(value + arg.value)
+
+fun main() {
+  require(foo1(A("a")) == A("aa"))
+  require(foo2(A("a")) == A("aa"))
+  require(foo3(A("a")) == A("aa"))
+  require(A("a").foo4() == A("aa"))
+  require(A("a").foo5(A("b")) == A("ab"))
+}
+        """.trimIndent()
+        )
+    }
+
     @Test
     fun testBulk() {
-        test("""
+        test(
+            """
 annotation class InlineThisClass
 
 @JvmInline
@@ -156,12 +334,13 @@ fun main() {
   o.hNullable = null
   require(o.hNullable == null)
 }
-    """.trimIndent())
+    """.trimIndent()
+        )
     }
 
     @Test
-    fun testNestedClasses() {
-        test("""    
+    fun testNestedClasses() = test(
+        """    
 annotation class InlineThisClass
 
 @JvmInline
@@ -177,10 +356,10 @@ value class C(val b: B)
 value class B(val a: A)
 
 fun main() {
-  require(C(B(A("aba"))).b.a == C(B(A("aba"))).b.a)
+require(C(B(A("aba"))).b.a == C(B(A("aba"))).b.a)
 }
-        """.trimIndent())
-    }
+    """.trimIndent()
+    )
 }
 
 fun test(@Language("kotlin") sourceCode: String) {
@@ -194,8 +373,8 @@ fun test(@Language("kotlin") sourceCode: String) {
 }
 
 fun compile(
-        sourceFiles: List<SourceFile>,
-        plugin: ComponentRegistrar = TemplateComponentRegistrar(),
+    sourceFiles: List<SourceFile>,
+    plugin: ComponentRegistrar = TemplateComponentRegistrar(),
 ): KotlinCompilation.Result {
     return KotlinCompilation().apply {
         sources = sourceFiles
@@ -206,8 +385,8 @@ fun compile(
 }
 
 fun compile(
-        sourceFile: SourceFile,
-        plugin: ComponentRegistrar = TemplateComponentRegistrar(),
+    sourceFile: SourceFile,
+    plugin: ComponentRegistrar = TemplateComponentRegistrar(),
 ): KotlinCompilation.Result {
     return compile(listOf(sourceFile), plugin)
 }

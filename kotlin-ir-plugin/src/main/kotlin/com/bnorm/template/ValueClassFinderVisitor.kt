@@ -44,13 +44,16 @@ class ValueClassFinderVisitor(
             stack += ClassThings(declaration.symbol.defaultType)
             super.visitClass(declaration)
             result += stack.removeLast()
+            return
         }
         super.visitClass(declaration)
     }
 
     override fun visitConstructor(declaration: IrConstructor) {
-        update { constructorSymbol = declaration.symbol }
-        update { innerType = declaration.valueParameters.single().type }
+        if (declaration.returnType == stack.lastOrNull()?.classType) {
+            update { constructorSymbol = declaration.symbol }
+            update { innerType = declaration.valueParameters.single().type }
+        }
         super.visitConstructor(declaration)
     }
 
