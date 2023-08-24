@@ -37,9 +37,9 @@ class MyIrGenerationExtension(
             "Annotation class $annotationFqn not found."
         }
 
-        messageCollector.report(CompilerMessageSeverity.INFO, moduleFragment.dump())
+//        messageCollector.report(CompilerMessageSeverity.STRONG_WARNING, moduleFragment.dump())
         WholeVisitor(pluginContext, annotationClass).run(moduleFragment)
-        messageCollector.report(CompilerMessageSeverity.INFO, moduleFragment.dump())
+        messageCollector.report(CompilerMessageSeverity.STRONG_WARNING, moduleFragment.dump())
     }
 }
 
