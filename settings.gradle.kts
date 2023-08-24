@@ -1,5 +1,5 @@
-rootProject.name = "kotlin-ir-plugin-template"
+rootProject.name = "see-through"
 
-include(":kotlin-ir-plugin-gradle")
-include(":kotlin-ir-plugin")
-include(":debuglog-annotation")
+include(":see-through-plugin-gradle")
+include(":see-through-plugin-kotlin")
+include(":see-through-annotation")

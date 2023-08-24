@@ -1,0 +1,13 @@
+plugins {
+    kotlin("jvm") version "1.9.0"
+    id("dev.jvmusin.see-through") version "0.0.1"
+}
+
+repositories {
+    mavenCentral()
+}
+
+seeThrough {
+    stringProperty.set("qw")
+    fileProperty.set(file("."))
+}
