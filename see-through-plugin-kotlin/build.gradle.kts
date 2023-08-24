@@ -6,6 +6,12 @@ plugins {
     id("com.github.gmazzo.buildconfig")
 }
 
+java.toolchain.languageVersion = JavaLanguageVersion.of(11)
+
+tasks.withType<KotlinCompile> {
+    kotlinOptions.jvmTarget = "11"
+}
+
 dependencies {
     compileOnly("org.jetbrains.kotlin:kotlin-compiler-embeddable")
 

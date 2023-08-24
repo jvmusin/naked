@@ -1,7 +1,15 @@
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
 plugins {
     id("java-gradle-plugin")
     kotlin("jvm")
     id("com.github.gmazzo.buildconfig")
+}
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(11)
+
+tasks.withType<KotlinCompile> {
+    kotlinOptions.jvmTarget = "11"
 }
 
 dependencies {
