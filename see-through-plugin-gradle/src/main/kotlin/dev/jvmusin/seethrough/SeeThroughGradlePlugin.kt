@@ -25,18 +25,11 @@ class SeeThroughGradlePlugin : KotlinCompilerPluginSupportPlugin {
     override fun applyToCompilation(
         kotlinCompilation: KotlinCompilation<*>
     ): Provider<List<SubpluginOption>> {
-        val project = kotlinCompilation.target.project
-        val extension = project.extensions.getByType(TemplateGradleExtension::class.java)
-
         kotlinCompilation.dependencies {
             implementation("${BuildConfig.ANNOTATION_LIBRARY_GROUP}:${BuildConfig.ANNOTATION_LIBRARY_NAME}:${BuildConfig.ANNOTATION_LIBRARY_VERSION}")
         }
-
-        return project.provider {
-            listOf(
-                SubpluginOption(key = "string", value = extension.stringProperty.get()),
-                SubpluginOption(key = "file", value = extension.fileProperty.get().asFile.path),
-            )
-        }
+        val project = kotlinCompilation.target.project
+        val extension = project.extensions.getByType(TemplateGradleExtension::class.java)
+        return project.provider { listOf(SubpluginOption("enabled", extension.enabled.get().toString())) }
     }
 }

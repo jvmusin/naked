@@ -10,28 +10,19 @@ import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.name.FqName
 
 @AutoService(ComponentRegistrar::class)
-class TemplateComponentRegistrar(
-    private val defaultString: String,
-    private val defaultFile: String,
-    private val defaultAnnotation: String,
-) : ComponentRegistrar {
-
-    @Suppress("unused") // Used by service loader
-    constructor() : this(
-        defaultString = "Hello, World!",
-        defaultFile = "file.txt",
-        defaultAnnotation = "SeeThrough",
-    )
-
+class TemplateComponentRegistrar : ComponentRegistrar {
     override fun registerProjectComponents(
         project: MockProject,
         configuration: CompilerConfiguration,
     ) {
         val messageCollector = configuration.get(CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY, MessageCollector.NONE)
-        val string = configuration.get(TemplateCommandLineProcessor.ARG_STRING, defaultString)
-        val file = configuration.get(TemplateCommandLineProcessor.ARG_FILE, defaultFile)
-        val annotation = configuration.get(TemplateCommandLineProcessor.ARG_ANNOTATION, defaultAnnotation)
+        val enabled = configuration.get(TemplateCommandLineProcessor.ARG_ENABLED)
 
-        IrGenerationExtension.registerExtension(project, MyIrGenerationExtension(messageCollector, FqName(annotation)))
+        if (enabled != false.toString()) {
+            IrGenerationExtension.registerExtension(
+                project,
+                MyIrGenerationExtension(messageCollector, FqName("SeeThrough"))
+            )
+        }
     }
 }

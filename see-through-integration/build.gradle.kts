@@ -8,6 +8,5 @@ repositories {
 }
 
 seeThrough {
-    stringProperty.set("qw")
-    fileProperty.set(file("."))
+    enabled = true
 }
