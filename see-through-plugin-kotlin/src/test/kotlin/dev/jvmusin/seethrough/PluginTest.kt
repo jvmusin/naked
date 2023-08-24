@@ -72,12 +72,12 @@ fun main() {
     fun testClassCalls() {
         test(
             """
-
 @JvmInline
 @SeeThrough
 value class A(val value: String)
 
 fun main() {
+  @Suppress("RemoveRedundantQualifierName", "RedundantSuppression")
   require(A::class == kotlin.String::class)
   require(A::class.java == java.lang.String::class.java)
 }
