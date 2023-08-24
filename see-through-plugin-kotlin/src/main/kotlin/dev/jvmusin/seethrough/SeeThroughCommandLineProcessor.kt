@@ -8,7 +8,7 @@ import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.config.CompilerConfigurationKey
 
 @AutoService(CommandLineProcessor::class)
-class TemplateCommandLineProcessor : CommandLineProcessor {
+class SeeThroughCommandLineProcessor : CommandLineProcessor {
     companion object {
         private const val OPTION_ENABLED = "enabled"
         val ARG_ENABLED = CompilerConfigurationKey<String>(OPTION_ENABLED)

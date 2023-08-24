@@ -193,6 +193,51 @@ require(C(B(A("aba"))).b.a == C(B(A("aba"))).b.a)
 }
     """.trimIndent()
     )
+
+    @Test
+    fun testTwoFiles() {
+        val result = compile(
+            sourceFiles = listOf(
+                SourceFile.kotlin(
+                    "IntegrationTest.kt",
+                    """
+import SeeThrough
+
+
+
+
+@JvmInline
+@SeeThrough
+value class Inlined(val value: String)
+
+@JvmInline
+value class NonInlined(val value: String)
+
+fun main() {
+
+}
+""".trimIndent()
+                ),
+                SourceFile.kotlin(
+                    "sub/other.kt",
+                    """
+package sub
+
+import Inlined
+
+
+
+
+fun main() {
+    val i = Inlined("")
+}
+""".trimIndent()
+                )
+            )
+        )
+
+        assertEquals(KotlinCompilation.ExitCode.OK, result.exitCode)
+    }
 }
 
 fun test(@Language("kotlin") sourceCode: String) {
@@ -207,7 +252,7 @@ fun test(@Language("kotlin") sourceCode: String) {
 
 fun compile(
     sourceFiles: List<SourceFile>,
-    plugin: ComponentRegistrar = TemplateComponentRegistrar(),
+    plugin: ComponentRegistrar = SeeThroughComponentRegistrar(),
 ): KotlinCompilation.Result {
     return KotlinCompilation().apply {
         sources = sourceFiles
@@ -219,7 +264,7 @@ fun compile(
 
 fun compile(
     sourceFile: SourceFile,
-    plugin: ComponentRegistrar = TemplateComponentRegistrar(),
+    plugin: ComponentRegistrar = SeeThroughComponentRegistrar(),
 ): KotlinCompilation.Result {
     return compile(listOf(sourceFile), plugin)
 }

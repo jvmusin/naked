@@ -10,13 +10,13 @@ import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.name.FqName
 
 @AutoService(ComponentRegistrar::class)
-class TemplateComponentRegistrar : ComponentRegistrar {
+class SeeThroughComponentRegistrar : ComponentRegistrar {
     override fun registerProjectComponents(
         project: MockProject,
         configuration: CompilerConfiguration,
     ) {
         val messageCollector = configuration.get(CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY, MessageCollector.NONE)
-        val enabled = configuration.get(TemplateCommandLineProcessor.ARG_ENABLED)
+        val enabled = configuration.get(SeeThroughCommandLineProcessor.ARG_ENABLED)
 
         if (enabled != false.toString()) {
             IrGenerationExtension.registerExtension(
