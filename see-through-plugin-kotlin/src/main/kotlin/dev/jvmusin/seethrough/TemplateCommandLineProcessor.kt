@@ -28,49 +28,49 @@ import org.jetbrains.kotlin.config.CompilerConfigurationKey
 
 @AutoService(CommandLineProcessor::class)
 class TemplateCommandLineProcessor : CommandLineProcessor {
-  companion object {
-    private const val OPTION_STRING = "string"
-    private const val OPTION_FILE = "file"
-    private const val OPTION_ANNOTATION = "annotation"
+    companion object {
+        private const val OPTION_STRING = "string"
+        private const val OPTION_FILE = "file"
+        private const val OPTION_ANNOTATION = "annotation"
 
-    val ARG_STRING = CompilerConfigurationKey<String>(OPTION_STRING)
-    val ARG_FILE = CompilerConfigurationKey<String>(OPTION_FILE)
-    val ARG_ANNOTATION = CompilerConfigurationKey<String>(OPTION_ANNOTATION)
-  }
-
-  override val pluginId: String = BuildConfig.KOTLIN_PLUGIN_ID
-
-  override val pluginOptions: Collection<CliOption> = listOf(
-    CliOption(
-      optionName = OPTION_STRING,
-      valueDescription = "string",
-      description = "sample string argument",
-      required = false,
-    ),
-    CliOption(
-      optionName = OPTION_FILE,
-      valueDescription = "file",
-      description = "sample file argument",
-      required = false,
-    ),
-    CliOption(
-      optionName = OPTION_ANNOTATION,
-      valueDescription = "annotation",
-      description = "The FQN of the annotation class used to mark value classes to inline.",
-      required = false,
-    ),
-  )
-
-  override fun processOption(
-    option: AbstractCliOption,
-    value: String,
-    configuration: CompilerConfiguration
-  ) {
-    return when (option.optionName) {
-      OPTION_STRING -> configuration.put(ARG_STRING, value)
-      OPTION_FILE -> configuration.put(ARG_FILE, value)
-      OPTION_ANNOTATION -> configuration.put(ARG_ANNOTATION, value)
-      else -> throw IllegalArgumentException("Unexpected config option ${option.optionName}")
+        val ARG_STRING = CompilerConfigurationKey<String>(OPTION_STRING)
+        val ARG_FILE = CompilerConfigurationKey<String>(OPTION_FILE)
+        val ARG_ANNOTATION = CompilerConfigurationKey<String>(OPTION_ANNOTATION)
     }
-  }
+
+    override val pluginId: String = BuildConfig.KOTLIN_PLUGIN_ID
+
+    override val pluginOptions: Collection<CliOption> = listOf(
+        CliOption(
+            optionName = OPTION_STRING,
+            valueDescription = "string",
+            description = "sample string argument",
+            required = false,
+        ),
+        CliOption(
+            optionName = OPTION_FILE,
+            valueDescription = "file",
+            description = "sample file argument",
+            required = false,
+        ),
+        CliOption(
+            optionName = OPTION_ANNOTATION,
+            valueDescription = "annotation",
+            description = "The FQN of the annotation class used to mark value classes to inline.",
+            required = false,
+        ),
+    )
+
+    override fun processOption(
+        option: AbstractCliOption,
+        value: String,
+        configuration: CompilerConfiguration
+    ) {
+        return when (option.optionName) {
+            OPTION_STRING -> configuration.put(ARG_STRING, value)
+            OPTION_FILE -> configuration.put(ARG_FILE, value)
+            OPTION_ANNOTATION -> configuration.put(ARG_ANNOTATION, value)
+            else -> throw IllegalArgumentException("Unexpected config option ${option.optionName}")
+        }
+    }
 }

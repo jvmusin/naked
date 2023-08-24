@@ -4,6 +4,7 @@ import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrFunction
+import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.IrConstructorSymbol
 import org.jetbrains.kotlin.ir.symbols.IrFunctionSymbol
@@ -13,6 +14,7 @@ import org.jetbrains.kotlin.ir.types.isPrimitiveType
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.visitors.IrElementVisitorVoid
 import org.jetbrains.kotlin.ir.visitors.acceptChildrenVoid
+import org.jetbrains.kotlin.ir.visitors.acceptVoid
 
 class ValueClassFinderVisitor(
     private val annotationClass: IrClassSymbol
@@ -20,7 +22,12 @@ class ValueClassFinderVisitor(
     private val stack = ArrayDeque<ClassThings>()
     private val result = mutableListOf<ClassThings>()
 
-    fun getFoundClassesSortedFromLeafs(): List<ClassThings> {
+    fun findClasses(moduleFragment: IrModuleFragment): List<ClassThings> {
+        moduleFragment.acceptVoid(this)
+        return getFoundClassesSortedFromLeafs()
+    }
+
+    private fun getFoundClassesSortedFromLeafs(): List<ClassThings> {
         val thingsOfClass = result.associateBy { it.classType }.toMutableMap()
         val sorted = mutableListOf<ClassThings>()
         while (thingsOfClass.isNotEmpty()) {

@@ -23,40 +23,59 @@ import org.jetbrains.kotlin.ir.types.impl.buildSimpleType
 import org.jetbrains.kotlin.ir.util.TypeRemapper
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.remapTypes
-import org.jetbrains.kotlin.ir.visitors.acceptVoid
+import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.name.FqName
 
-class MyIrGenerationExtension(private val messageCollector: MessageCollector, private val annotationFqn: FqName) : IrGenerationExtension {
+class MyIrGenerationExtension(
+    private val messageCollector: MessageCollector,
+    private val annotationFqn: FqName,
+) : IrGenerationExtension {
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
         val annotationClass = requireNotNull(pluginContext.referenceClass(annotationFqn)) {
             "Annotation class $annotationFqn not found."
         }
 
         messageCollector.report(CompilerMessageSeverity.INFO, moduleFragment.dump())
-        WholeVisitor(messageCollector, pluginContext, annotationClass).run(moduleFragment)
+        WholeVisitor(pluginContext, annotationClass).run(moduleFragment)
         messageCollector.report(CompilerMessageSeverity.INFO, moduleFragment.dump())
     }
 }
 
 class WholeVisitor(
-        private val messageCollector: MessageCollector,
-        private val pluginContext: IrPluginContext,
-        private val annotationClass: IrClassSymbol,
+    private val pluginContext: IrPluginContext,
+    private val annotationClass: IrClassSymbol,
 ) {
     fun run(moduleFragment: IrModuleFragment) {
-        val classFinder = ValueClassFinderVisitor(annotationClass)
-        moduleFragment.acceptVoid(classFinder)
+        val classes = ValueClassFinderVisitor(annotationClass).findClasses(moduleFragment)
 
-        for (classThings in classFinder.getFoundClassesSortedFromLeafs()) {
-            moduleFragment.transform(ConstructorTransformer(classThings.constructorSymbol), null)
-            moduleFragment.transform(OverriddenFunctionCallTransformer(classThings.getSymbol, classThings.classType, classThings.innerType), null)
+        for (classThings in classes) {
+            moduleFragment.transform(ConstructorTransformer(classThings.constructorSymbol))
+            moduleFragment.transform(
+                OverriddenFunctionCallTransformer(
+                    classThings.getSymbol,
+                    classThings.classType,
+                    classThings.innerType
+                )
+            )
 
-            moduleFragment.transform(TypeRemapperTransformer(classThings.classType, classThings.innerType), null)
-            moduleFragment.transform(TypeRemapperTransformer(classThings.classType.makeNullable(), classThings.innerType.makeNullable()), null)
+            moduleFragment.transform(
+                TypeRemapperTransformer(
+                    classThings.classType,
+                    classThings.innerType
+                )
+            )
+            moduleFragment.transform(
+                TypeRemapperTransformer(
+                    classThings.classType.makeNullable(),
+                    classThings.innerType.makeNullable()
+                )
+            )
         }
     }
 
-    inner class ConstructorTransformer(private val constructorSymbol: IrConstructorSymbol) : IrElementTransformerVoidWithContext() {
+    inner class ConstructorTransformer(
+        private val constructorSymbol: IrConstructorSymbol,
+    ) : IrElementTransformerVoidWithContext() {
         override fun visitConstructorCall(expression: IrConstructorCall): IrExpression {
             if (expression.symbol == constructorSymbol) {
                 return visitExpression(expression.valueArguments.single()!!)
@@ -65,7 +84,10 @@ class WholeVisitor(
         }
     }
 
-    inner class TypeRemapperTransformer(private val classType: IrType, private val innerValueType: IrType) : IrElementTransformerVoidWithContext() {
+    inner class TypeRemapperTransformer(
+        private val classType: IrType,
+        private val innerValueType: IrType,
+    ) : IrElementTransformerVoidWithContext() {
         private val typeRemapper = object : TypeRemapper {
             override fun enterScope(irTypeParametersContainer: IrTypeParametersContainer) {
             }
@@ -93,7 +115,11 @@ class WholeVisitor(
         }
     }
 
-    inner class OverriddenFunctionCallTransformer(private val getSymbol: IrFunctionSymbol, private val sourceType: IrType, private val innerType: IrType) : IrElementTransformerVoidWithContext() {
+    inner class OverriddenFunctionCallTransformer(
+        private val getSymbol: IrFunctionSymbol,
+        private val sourceType: IrType,
+        private val innerType: IrType,
+    ) : IrElementTransformerVoidWithContext() {
         private val replacements = run {
             val replacedFunctionNames = arrayOf("hashCode", "toString", "equals")
             val sourceType = sourceType.classFqName!!.asString()
@@ -109,15 +135,22 @@ class WholeVisitor(
                 return visitExpression(expression.dispatchReceiver!!)
             }
             replacements[expression.symbol]?.let { replacement ->
-                val replacedCall = DeclarationIrBuilder(pluginContext, currentScope!!.scope.scopeOwnerSymbol).irCall(replacement).also { call ->
-                    call.dispatchReceiver = expression.dispatchReceiver
-                    repeat(expression.valueArgumentsCount) { arg ->
-                        call.putValueArgument(arg, expression.getValueArgument(arg))
+                val replacedCall = DeclarationIrBuilder(pluginContext, currentScope!!.scope.scopeOwnerSymbol)
+                    .irCall(replacement).also { call ->
+                        call.dispatchReceiver = expression.dispatchReceiver
+                        repeat(expression.valueArgumentsCount) { arg ->
+                            call.putValueArgument(arg, expression.getValueArgument(arg))
+                        }
                     }
-                }
                 return visitCall(replacedCall)
             }
             return super.visitCall(expression)
+        }
+    }
+
+    private companion object {
+        private fun IrModuleFragment.transform(transformer: IrElementTransformerVoid) {
+            transform(transformer, null)
         }
     }
 }
