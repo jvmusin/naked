@@ -19,12 +19,50 @@ import org.jetbrains.kotlin.ir.visitors.acceptVoid
 class ValueClassFinderVisitor(
     private val annotationClass: IrClassSymbol
 ) : IrElementVisitorVoid {
-    private val stack = ArrayDeque<ClassThings>()
     private val result = mutableListOf<ClassThings>()
 
     fun findClasses(moduleFragment: IrModuleFragment): List<ClassThings> {
         moduleFragment.acceptVoid(this)
         return getFoundClassesSortedFromLeafs()
+    }
+
+    override fun visitElement(element: IrElement) {
+        element.acceptChildrenVoid(this)
+    }
+
+    inner class Diver(private val classThings: ClassThings) : IrElementVisitorVoid {
+        private inline fun update(action: ClassThings.() -> Unit) = classThings.action()
+
+        override fun visitElement(element: IrElement) {
+            element.acceptChildrenVoid(this)
+        }
+
+        override fun visitConstructor(declaration: IrConstructor) {
+            if (declaration.returnType == classThings.classType) {
+                update { constructorSymbol = declaration.symbol }
+                update { innerType = declaration.valueParameters.single().type }
+            }
+            super.visitConstructor(declaration)
+        }
+
+        override fun visitFunction(declaration: IrFunction) {
+            // TODO: Use some other method
+            if (declaration.name.asString().contains("get-")) {
+                update { getSymbol = declaration.symbol }
+            }
+            super.visitFunction(declaration)
+        }
+    }
+
+    override fun visitClass(declaration: IrClass) {
+        if (declaration.hasAnnotation(annotationClass)) {
+            require(declaration.isValue)
+            val things = ClassThings(declaration.symbol.defaultType)
+            declaration.acceptVoid(Diver(things))
+            result += things
+            return
+        }
+        super.visitClass(declaration)
     }
 
     private fun getFoundClassesSortedFromLeafs(): List<ClassThings> {
@@ -37,39 +75,6 @@ class ValueClassFinderVisitor(
             sorted += classThings
         }
         return sorted
-    }
-
-    private inline fun update(action: ClassThings.() -> Unit) = stack.lastOrNull()?.action()
-
-    override fun visitElement(element: IrElement) {
-        element.acceptChildrenVoid(this)
-    }
-
-    override fun visitClass(declaration: IrClass) {
-        if (declaration.hasAnnotation(annotationClass)) {
-            require(declaration.isValue)
-            stack += ClassThings(declaration.symbol.defaultType)
-            super.visitClass(declaration)
-            result += stack.removeLast()
-            return
-        }
-        super.visitClass(declaration)
-    }
-
-    override fun visitConstructor(declaration: IrConstructor) {
-        if (declaration.returnType == stack.lastOrNull()?.classType) {
-            update { constructorSymbol = declaration.symbol }
-            update { innerType = declaration.valueParameters.single().type }
-        }
-        super.visitConstructor(declaration)
-    }
-
-    override fun visitFunction(declaration: IrFunction) {
-        // TODO: Use some other method
-        if (declaration.name.asString().contains("get-")) {
-            update { getSymbol = declaration.symbol }
-        }
-        super.visitFunction(declaration)
     }
 
     inner class ClassThings(val classType: IrType) {
