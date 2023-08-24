@@ -51,7 +51,6 @@ class WholeVisitor(
             moduleFragment.transform(ConstructorTransformer(classThings.constructorSymbol), null)
             moduleFragment.transform(OverriddenFunctionCallTransformer(classThings.getSymbol, classThings.classType, classThings.innerType), null)
 
-            // TODO: Check nullable backing fields
             moduleFragment.transform(TypeRemapperTransformer(classThings.classType, classThings.innerType), null)
             moduleFragment.transform(TypeRemapperTransformer(classThings.classType.makeNullable(), classThings.innerType.makeNullable()), null)
         }

@@ -43,6 +43,11 @@ class TemplateGradlePlugin : KotlinCompilerPluginSupportPlugin {
   ): Provider<List<SubpluginOption>> {
     val project = kotlinCompilation.target.project
     val extension = project.extensions.getByType(TemplateGradleExtension::class.java)
+
+    kotlinCompilation.dependencies {
+      implementation("${BuildConfig.ANNOTATION_LIBRARY_GROUP}:${BuildConfig.ANNOTATION_LIBRARY_NAME}:${BuildConfig.ANNOTATION_LIBRARY_VERSION}")
+    }
+
     return project.provider {
       listOf(
         SubpluginOption(key = "string", value = extension.stringProperty.get()),
