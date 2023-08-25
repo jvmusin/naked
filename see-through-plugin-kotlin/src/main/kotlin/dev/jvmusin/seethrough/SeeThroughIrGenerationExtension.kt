@@ -65,18 +65,20 @@ class WholeVisitor(
             moduleFragment.transform(identityFunctionGenerator)
             val identityFunctionSymbol = identityFunctionGenerator.identityFunctionSymbol
 
-            moduleFragment.transform(
-                ConstructorCallTransformer(
-                    messageCollector,
-                    classThings.constructorSymbol,
-                    identityFunctionSymbol
-                )
-            )
+//            moduleFragment.transform(
+//                ConstructorCallTransformer(
+//                    messageCollector,
+//                    classThings.constructorSymbol,
+//                    identityFunctionSymbol
+//                )
+//            )
             moduleFragment.transform(
                 OverriddenFunctionCallTransformer(
                     classThings.getSymbol,
                     classThings.classType,
-                    classThings.innerType
+                    classThings.innerType,
+                    classThings.constructorSymbol,
+                    identityFunctionSymbol,
                 )
             )
 
@@ -184,6 +186,8 @@ class WholeVisitor(
         private val getSymbol: IrFunctionSymbol,
         private val sourceType: IrType,
         private val innerType: IrType,
+        private val constructorSymbol: IrFunctionSymbol,
+        private val identityFunctionSymbol: IrFunctionSymbol,
     ) : IrElementTransformerVoidWithContext() {
         private val replacements = run {
             val replacedFunctionNames = arrayOf("hashCode", "toString", "equals")
@@ -192,7 +196,7 @@ class WholeVisitor(
             fun fn(type: String, f: String) = pluginContext.referenceFunctions(FqName("${type}.${f}")).single()
             replacedFunctionNames.associate { func ->
                 fn(sourceType, func) to fn(targetType, func)
-            }
+            } + ((constructorSymbol as IrSimpleFunctionSymbol) to (identityFunctionSymbol as IrSimpleFunctionSymbol))
         }
 
         override fun visitCall(expression: IrCall): IrExpression {
