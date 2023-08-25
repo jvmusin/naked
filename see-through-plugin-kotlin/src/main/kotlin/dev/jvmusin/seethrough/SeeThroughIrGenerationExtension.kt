@@ -66,7 +66,7 @@ class WholeVisitor(
             val identityFunctionSymbol = identityFunctionGenerator.identityFunctionSymbol
 
             moduleFragment.transform(
-                ConstructorTransformer(
+                ConstructorCallTransformer(
                     messageCollector,
                     classThings.constructorSymbol,
                     identityFunctionSymbol
@@ -119,7 +119,7 @@ class WholeVisitor(
         }
     }
 
-    inner class ConstructorTransformer(
+    inner class ConstructorCallTransformer(
         private val messageCollector: MessageCollector,
         private val constructorSymbol: IrConstructorSymbol,
         private val identityFunctionSymbol: IrFunctionSymbol,
@@ -210,6 +210,18 @@ class WholeVisitor(
                 return visitCall(replacedCall)
             }
             return super.visitCall(expression)
+        }
+
+        override fun visitFunctionReference(expression: IrFunctionReference): IrExpression {
+            replacements[expression.reflectionTarget]?.let { replacement->
+                val newFunctionReference = DeclarationIrBuilder(pluginContext, expression.symbol)
+                    .irFunctionReference(
+                        expression.type,
+                        replacement
+                    )
+                return visitFunctionReference(newFunctionReference)
+            }
+            return super.visitFunctionReference(expression)
         }
     }
 

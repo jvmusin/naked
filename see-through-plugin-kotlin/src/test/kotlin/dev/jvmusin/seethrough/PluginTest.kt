@@ -147,7 +147,7 @@ fun main() {
     }
 
     @Test
-    fun testMethodReference() {
+    fun testConstructorReference() {
         test(
             """
 @JvmInline
@@ -158,6 +158,24 @@ fun f(constructor: (String) -> A) = constructor
 
 fun main() {
   require(f(::A)("aba") == A("aba"))
+}
+            """.trimIndent()
+        )
+    }
+
+    @Test
+    fun testOverriddenFunctionReference() {
+        test(
+            """
+@JvmInline
+@SeeThrough
+value class A(val value: String)
+
+fun main() {
+  require(A::hashCode.invoke(A("a")) == "a".hashCode())
+  require(A::toString.invoke(A("a")) == "a")
+  require(A::equals.invoke(A("a"), A("a")))
+  require(!A::equals.invoke(A("a"), A("b")))
 }
             """.trimIndent()
         )

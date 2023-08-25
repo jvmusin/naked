@@ -16,6 +16,8 @@ fun forEach(action: (i: Inlined, info: Unit) -> Unit) {
 class Derived(override val v: Inlined) : Base
 
 fun main() {
-    println(Derived(Inlined("23")))
-    forEach { i, info -> println(i) }
+    require(Inlined::hashCode.invoke(Inlined("a")) == "a".hashCode())
+    require(Inlined::toString.invoke(Inlined("a")) == "a")
+    require(Inlined::equals.invoke(Inlined("a"), Inlined("a")))
+    require(!Inlined::equals.invoke(Inlined("a"), Inlined("b")))
 }
