@@ -28,6 +28,19 @@ import org.jetbrains.kotlin.ir.util.remapTypes
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.name.FqName
 
+annotation class Naked
+annotation class SeeThrough
+
+@JvmInline
+@Naked
+value class MySuperWrapper(val value: String)
+
+@JvmInline
+@SeeThrough
+value class MyExtraWrapper(val value: String)
+
+
+
 class MyIrGenerationExtension(
     private val messageCollector: MessageCollector,
     private val annotationFqn: FqName,
@@ -37,9 +50,9 @@ class MyIrGenerationExtension(
             "Annotation class $annotationFqn not found."
         }
 
-//        messageCollector.report(CompilerMessageSeverity.STRONG_WARNING, moduleFragment.dump())
+        messageCollector.report(CompilerMessageSeverity.INFO, moduleFragment.dump())
         WholeVisitor(pluginContext, annotationClass).run(moduleFragment)
-        messageCollector.report(CompilerMessageSeverity.STRONG_WARNING, moduleFragment.dump())
+        messageCollector.report(CompilerMessageSeverity.INFO, moduleFragment.dump())
     }
 }
 
