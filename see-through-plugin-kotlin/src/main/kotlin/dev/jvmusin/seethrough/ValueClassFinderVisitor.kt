@@ -57,7 +57,7 @@ class ValueClassFinderVisitor(
     override fun visitClass(declaration: IrClass) {
         if (declaration.hasAnnotation(annotationClass)) {
             require(declaration.isValue)
-            val things = ClassThings(declaration.symbol.defaultType)
+            val things = ClassThings(declaration.symbol)
             declaration.acceptVoid(Diver(things))
             result += things
             return
@@ -77,7 +77,8 @@ class ValueClassFinderVisitor(
         return sorted
     }
 
-    inner class ClassThings(val classType: IrType) {
+    inner class ClassThings(val classSymbol: IrClassSymbol) {
+        val classType: IrType = classSymbol.defaultType
         var getSymbol: IrFunctionSymbol by OneTimeSetField()
         var constructorSymbol: IrConstructorSymbol by OneTimeSetField()
         var innerType: IrType by OneTimeSetField { !isPrimitiveType() }

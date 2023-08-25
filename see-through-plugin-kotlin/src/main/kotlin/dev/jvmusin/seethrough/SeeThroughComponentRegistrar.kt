@@ -21,7 +21,7 @@ class SeeThroughComponentRegistrar : ComponentRegistrar {
         if (enabled != false.toString()) {
             IrGenerationExtension.registerExtension(
                 project,
-                MyIrGenerationExtension(messageCollector, FqName("SeeThrough"))
+                SeeThroughIrGenerationExtension(messageCollector, FqName("SeeThrough"))
             )
         }
     }

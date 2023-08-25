@@ -147,6 +147,23 @@ fun main() {
     }
 
     @Test
+    fun testMethodReference() {
+        test(
+            """
+@JvmInline
+@SeeThrough
+value class A(val value: String)
+
+fun f(constructor: (String) -> A) = constructor
+
+fun main() {
+  require(f(::A)("aba") == A("aba"))
+}
+            """.trimIndent()
+        )
+    }
+
+    @Test
     fun testFunctionArgument() {
         test(
             """
