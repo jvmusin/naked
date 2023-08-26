@@ -4,6 +4,8 @@ plugins {
     kotlin("jvm")
     kotlin("kapt")
     id("com.github.gmazzo.buildconfig")
+    id("maven-publish")
+    id("signing")
 }
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(11)
@@ -31,4 +33,24 @@ dependencies {
 buildConfig {
     packageName(group.toString())
     buildConfigField("String", "KOTLIN_PLUGIN_ID", "\"${rootProject.extra["kotlin_plugin_id"]}\"")
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("seeThroughKotlinPlugin") {
+            from(components["kotlin"])
+            pom {
+                name = "SeeThrough Kotlin Compiler Plugin"
+                description = "Kotlin Compiler Plugin which allows inlining value-class in Kotlin with just a single annotation."
+                url = "https://github.com/jvmusin/see-through"
+            }
+        }
+    }
+    repositories {
+        mavenCentral()
+    }
+}
+
+signing {
+    sign(publishing.publications["seeThroughKotlinPlugin"])
 }
