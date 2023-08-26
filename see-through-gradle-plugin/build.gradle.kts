@@ -17,7 +17,7 @@ dependencies {
 }
 
 buildConfig {
-    val project = project(":see-through-plugin-kotlin")
+    val project = project(":see-through-kotlin-plugin")
     packageName(project.group.toString())
     buildConfigField("String", "KOTLIN_PLUGIN_ID", "\"${rootProject.extra["kotlin_plugin_id"]}\"")
     buildConfigField("String", "KOTLIN_PLUGIN_GROUP", "\"${project.group}\"")

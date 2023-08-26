@@ -5,7 +5,7 @@ package dev.jvmusin.seethrough
  * so there will be no boxed value class objects in runtime.
  *
  * Be careful with applying this annotation - there are lots of limitations for the value class:
- * - It should have not parametrized - `value class Value<T>(data: T)` will not work
+ * - It should have not parametrized - `value class Value<T>(val data: T)` will not work
  * - It should not define or override any methods
  * - It should not contain primitive type as a value
  * - It should not implement any interfaces
