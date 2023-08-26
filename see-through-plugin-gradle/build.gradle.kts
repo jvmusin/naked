@@ -34,7 +34,7 @@ gradlePlugin {
     website = "https://github.com/jvmusin/see-through"
     vcsUrl = "https://github.com/jvmusin/see-through"
     plugins {
-        create("seeThrough") {
+        create("seeThroughPlugin") {
             id = rootProject.extra["kotlin_plugin_id"] as String
             displayName = "SeeThrough Kotlin Compiler Plugin"
             description = "Kotlin Compiler Plugin which allows to inline value classes to avoid unnecessary boxing " +
