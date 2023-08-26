@@ -10,6 +10,10 @@ java.toolchain.languageVersion = JavaLanguageVersion.of(11)
 
 tasks.withType<KotlinCompile> {
     kotlinOptions.jvmTarget = "11"
+    kotlinOptions {
+        freeCompilerArgs += "-Xopt-in=org.jetbrains.kotlin.backend.common.extensions.FirIncompatiblePluginAPI"
+        freeCompilerArgs += "-Xopt-in=org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi"
+    }
 }
 
 dependencies {
@@ -20,18 +24,11 @@ dependencies {
 
     testImplementation(project(":see-through-annotation"))
     testImplementation(kotlin("test-junit"))
-    testImplementation("org.jetbrains.kotlin:kotlin-compiler-embeddable")
+    testImplementation("org.jetbrains.kotlin:kotlin-compiler-embeddable") // also kotlin?
     testImplementation("com.github.tschuchortdev:kotlin-compile-testing:1.5.0")
 }
 
 buildConfig {
     packageName(group.toString())
     buildConfigField("String", "KOTLIN_PLUGIN_ID", "\"${rootProject.extra["kotlin_plugin_id"]}\"")
-}
-
-tasks.withType<KotlinCompile>().configureEach {
-    kotlinOptions {
-        freeCompilerArgs += "-Xopt-in=org.jetbrains.kotlin.backend.common.extensions.FirIncompatiblePluginAPI"
-        freeCompilerArgs += "-Xopt-in=org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi"
-    }
 }

@@ -4,6 +4,7 @@ plugins {
     id("java-gradle-plugin")
     kotlin("jvm")
     id("com.github.gmazzo.buildconfig")
+    id("com.gradle.plugin-publish")
 }
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(11)

@@ -9,7 +9,7 @@ import org.jetbrains.kotlin.gradle.plugin.SubpluginOption
 
 class SeeThroughGradlePlugin : KotlinCompilerPluginSupportPlugin {
     override fun apply(target: Project): Unit = with(target) {
-        extensions.create("seeThrough", TemplateGradleExtension::class.java)
+        extensions.create("seeThrough", SeeThroughGradleExtension::class.java)
     }
 
     override fun isApplicable(kotlinCompilation: KotlinCompilation<*>): Boolean = true
@@ -29,7 +29,7 @@ class SeeThroughGradlePlugin : KotlinCompilerPluginSupportPlugin {
             implementation("${BuildConfig.ANNOTATION_LIBRARY_GROUP}:${BuildConfig.ANNOTATION_LIBRARY_NAME}:${BuildConfig.ANNOTATION_LIBRARY_VERSION}")
         }
         val project = kotlinCompilation.target.project
-        val extension = project.extensions.getByType(TemplateGradleExtension::class.java)
+        val extension = project.extensions.getByType(SeeThroughGradleExtension::class.java)
         return project.provider { listOf(SubpluginOption("enabled", extension.enabled.get().toString())) }
     }
 }
