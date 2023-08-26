@@ -15,12 +15,12 @@ tasks.withType<KotlinCompile> {
 mavenPublishing {
     publishToMavenCentral(SonatypeHost.S01)
 
-//    signAllPublications()
+    signAllPublications()
 
     coordinates(group.toString(), project.name, "$version-SNAPSHOT")
 
     pom {
-        name = "Naked Compiler Plugin Annotation"
+        name = "Naked Kotlin Compiler Plugin Annotation"
         description = "Annotation for the Naked Kotlin Compiler Plugin " +
                 "which is used for marking value classes to inline."
         inceptionYear = "2023"

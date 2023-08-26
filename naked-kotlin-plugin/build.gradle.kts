@@ -1,11 +1,11 @@
+import com.vanniktech.maven.publish.SonatypeHost
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     kotlin("jvm")
     kotlin("kapt")
     id("com.github.gmazzo.buildconfig")
-    id("maven-publish")
-    id("signing")
+    id("com.vanniktech.maven.publish") version "0.25.3"
 }
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(11)
@@ -35,22 +35,37 @@ buildConfig {
     buildConfigField("String", "KOTLIN_PLUGIN_ID", "\"${rootProject.extra["kotlin_plugin_id"]}\"")
 }
 
-publishing {
-    publications {
-        create<MavenPublication>("nakedKotlinPlugin") {
-            from(components["kotlin"])
-            pom {
-                name = "Naked Kotlin Compiler Plugin"
-                description = "Kotlin Compiler Plugin which allows inlining value-class in Kotlin with just a single annotation."
-                url = "https://github.com/jvmusin/naked"
+mavenPublishing {
+    publishToMavenCentral(SonatypeHost.S01)
+
+    signAllPublications()
+
+    coordinates(group.toString(), project.name, "$version-SNAPSHOT")
+
+    pom {
+        name = "Naked Kotlin Compiler Plugin"
+        description =
+            "Kotlin Compiler Plugin which allows inlining value-class in Kotlin with just a single annotation."
+        inceptionYear = "2023"
+        url = "https://github.com/jvmusin/naked"
+        licenses {
+            license {
+                name.set("The Apache License, Version 2.0")
+                url.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
+                distribution.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
             }
         }
+        developers {
+            developer {
+                id.set("jvmusin")
+                name.set("Rustam Musin")
+                url.set("https://github.com/jvmusin")
+            }
+        }
+        scm {
+            url.set("https://github.com/jvmusin/naked")
+            connection.set("scm:git:git://github.com/jvmusin/naked.git")
+            developerConnection.set("scm:git:ssh://git@github.com/jvmusin/naked.git")
+        }
     }
-    repositories {
-        mavenCentral()
-    }
-}
-
-signing {
-    sign(publishing.publications["nakedKotlinPlugin"])
 }
