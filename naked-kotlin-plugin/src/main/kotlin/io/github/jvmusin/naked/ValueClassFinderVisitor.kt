@@ -1,4 +1,4 @@
-package dev.jvmusin.naked
+package io.github.jvmusin.naked
 
 import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.declarations.IrClass

@@ -1,4 +1,4 @@
-import dev.jvmusin.naked.Naked
+import io.github.jvmusin.naked.Naked
 
 @JvmInline
 value class Wrapper(val data: String)

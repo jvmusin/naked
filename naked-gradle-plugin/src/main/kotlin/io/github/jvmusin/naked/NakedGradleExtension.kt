@@ -1,4 +1,4 @@
-package dev.jvmusin.naked
+package io.github.jvmusin.naked
 
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.Property

@@ -1,5 +1,5 @@
 buildscript {
-    extra["kotlin_plugin_id"] = "dev.jvmusin.naked"
+    extra["kotlin_plugin_id"] = "io.github.jvmusin.naked"
 }
 
 plugins {
@@ -11,7 +11,7 @@ plugins {
 }
 
 allprojects {
-    group = "dev.jvmusin.naked"
+    group = "io.github.jvmusin.naked"
     version = "0.0.1"
 }
 

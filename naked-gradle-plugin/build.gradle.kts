@@ -40,7 +40,7 @@ gradlePlugin {
             displayName = "Naked Kotlin Compiler Plugin"
             description = "Kotlin Compiler Plugin which allows to inline value classes to avoid unnecessary boxing " +
                     "when value classes are used as nullable or generic type."
-            implementationClass = "dev.jvmusin.naked.NakedGradlePlugin"
+            implementationClass = "io.github.jvmusin.naked.NakedGradlePlugin"
             tags = listOf("kotlin", "kotlin-compiler", "kotlin-compiler-plugin", "kotlin-plugin", "annotation")
         }
     }

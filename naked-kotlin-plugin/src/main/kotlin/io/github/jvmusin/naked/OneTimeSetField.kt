@@ -1,4 +1,4 @@
-package dev.jvmusin.naked
+package io.github.jvmusin.naked
 
 import kotlin.reflect.KProperty
 

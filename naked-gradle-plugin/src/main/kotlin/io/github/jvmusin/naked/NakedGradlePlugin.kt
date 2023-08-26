@@ -1,4 +1,4 @@
-package dev.jvmusin.naked
+package io.github.jvmusin.naked
 
 import org.gradle.api.Project
 import org.gradle.api.provider.Provider

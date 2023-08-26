@@ -1,4 +1,4 @@
-package dev.jvmusin.naked
+package io.github.jvmusin.naked
 
 /**
  * Marker annotation, which forces the compiler to inline all the usages of this clas,

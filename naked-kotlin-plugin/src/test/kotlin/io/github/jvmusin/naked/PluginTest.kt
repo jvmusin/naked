@@ -1,4 +1,4 @@
-package dev.jvmusin.naked
+package io.github.jvmusin.naked
 
 import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.SourceFile
@@ -14,7 +14,7 @@ class PluginTest {
         test(
             """
 @JvmInline
-@dev.jvmusin.naked.Naked
+@io.github.jvmusin.naked.Naked
 value class A(val value: String)
 
 fun main() {
@@ -34,7 +34,7 @@ fun main() {
             """
 
 @JvmInline
-@dev.jvmusin.naked.Naked
+@io.github.jvmusin.naked.Naked
 value class A(val value: String)
 
 fun <T : A> T.foo(a: T): T = A(value + a.value) as T
@@ -52,7 +52,7 @@ fun main() {
             """
 
 @JvmInline
-@dev.jvmusin.naked.Naked
+@io.github.jvmusin.naked.Naked
 value class A(val value: String)
 
 data class D(val a: A) {
@@ -74,7 +74,7 @@ fun main() {
         test(
             """
 @JvmInline
-@dev.jvmusin.naked.Naked
+@io.github.jvmusin.naked.Naked
 value class A(val value: String)
 
 fun main() {
@@ -92,7 +92,7 @@ fun main() {
         test(
             """
 @JvmInline
-@dev.jvmusin.naked.Naked
+@io.github.jvmusin.naked.Naked
 value class A(val value: String) {
   companion object {
     val B = A("b")
@@ -113,7 +113,7 @@ fun main() {
             """
 
 @JvmInline
-@dev.jvmusin.naked.Naked
+@io.github.jvmusin.naked.Naked
 value class A(val value: String)
 
 typealias B = A
@@ -133,7 +133,7 @@ fun main() {
             """
 
 @JvmInline
-@dev.jvmusin.naked.Naked
+@io.github.jvmusin.naked.Naked
 value class A(val value: String?)
 
 fun main() {
@@ -152,7 +152,7 @@ fun main() {
         test(
             """
 @JvmInline
-@dev.jvmusin.naked.Naked
+@io.github.jvmusin.naked.Naked
 value class A(val value: String)
 
 fun f(constructor: (String) -> A) = constructor
@@ -169,7 +169,7 @@ fun main() {
         test(
             """
 @JvmInline
-@dev.jvmusin.naked.Naked
+@io.github.jvmusin.naked.Naked
 value class A(val value: String)
 
 fun main() {
@@ -187,7 +187,7 @@ fun main() {
         test(
             """
 @JvmInline
-@dev.jvmusin.naked.Naked
+@io.github.jvmusin.naked.Naked
 value class A(val value: String)
 
 fun foo1(arg: A): A {
@@ -213,15 +213,15 @@ fun main() {
     fun testNestedClasses() = test(
         """    
 @JvmInline
-@dev.jvmusin.naked.Naked
+@io.github.jvmusin.naked.Naked
 value class A(val a: String)
 
 @JvmInline
-@dev.jvmusin.naked.Naked
+@io.github.jvmusin.naked.Naked
 value class C(val b: B)
 
 @JvmInline
-@dev.jvmusin.naked.Naked
+@io.github.jvmusin.naked.Naked
 value class B(val a: A)
 
 fun main() {

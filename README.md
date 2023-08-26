@@ -3,7 +3,7 @@
 The plugin which lets you easily inline your value classes with a single annotation:
 
 ```kotlin
-import dev.jvmusin.naked.Naked
+import io.github.jvmusin.naked.Naked
 
 @JvmInline
 value class Wrapper(val data: String)
@@ -28,15 +28,15 @@ wrapped value – with a string in the example above.
 
 ## Usage
 
-1. Register the plugin `dev.jvmusin.naked` in the `plugins` section of your project's `build.gradle.kts` file:
+1. Register the plugin `io.github.jvmusin.naked` in the `plugins` section of your project's `build.gradle.kts` file:
     ```
     plugins {
         ... your other plugins
-        id("dev.jvmusin.naked") version "0.0.1"
+        id("io.github.jvmusin.naked") version "0.0.1"
     }
     ```
 
-2. Annotate your value classes with `@dev.jvmusin.naked.Naked`
+2. Annotate your value classes with `@io.github.jvmusin.naked.Naked`
 3. That's it! All usages of the annotated class will be replaced with usages of the wrapped value!
 
 You can disable the plugin using `naked` extension in `build.gradle.kts` file:

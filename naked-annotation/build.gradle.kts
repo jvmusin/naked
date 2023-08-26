@@ -13,11 +13,11 @@ tasks.withType<KotlinCompile> {
 }
 
 mavenPublishing {
-    publishToMavenCentral(SonatypeHost.DEFAULT)
+    publishToMavenCentral(SonatypeHost.S01)
 
-    signAllPublications()
+//    signAllPublications()
 
-    coordinates(group.toString(), project.name, version.toString())
+    coordinates(group.toString(), project.name, "$version-SNAPSHOT")
 
     pom {
         name = "Naked Compiler Plugin Annotation"
@@ -28,8 +28,8 @@ mavenPublishing {
         licenses {
             license {
                 name.set("The Apache License, Version 2.0")
-                url.set("http://www.apache.org/licenses/LICENSE-2.0.txt")
-                distribution.set("http://www.apache.org/licenses/LICENSE-2.0.txt")
+                url.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
+                distribution.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
             }
         }
         developers {

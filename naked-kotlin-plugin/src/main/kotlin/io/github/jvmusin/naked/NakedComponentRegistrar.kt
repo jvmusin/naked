@@ -1,4 +1,4 @@
-package dev.jvmusin.naked
+package io.github.jvmusin.naked
 
 import com.google.auto.service.AutoService
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
@@ -23,7 +23,7 @@ class NakedComponentRegistrar : ComponentRegistrar {
         if (enabled == null || enabled == "true") {
             IrGenerationExtension.registerExtension(
                 project,
-                NakedIrGenerationExtension(messageCollector, FqName("dev.jvmusin.naked.Naked"))
+                NakedIrGenerationExtension(messageCollector, FqName("io.github.jvmusin.naked.Naked"))
             )
         }
     }
