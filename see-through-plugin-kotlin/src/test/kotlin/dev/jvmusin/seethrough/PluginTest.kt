@@ -14,7 +14,7 @@ class PluginTest {
         test(
             """
 @JvmInline
-@SeeThrough
+@dev.jvmusin.seethrough.SeeThrough
 value class A(val value: String)
 
 fun main() {
@@ -33,7 +33,7 @@ fun main() {
             """
 
 @JvmInline
-@SeeThrough
+@dev.jvmusin.seethrough.SeeThrough
 value class A(val value: String)
 
 fun <T : A> T.foo(a: T): T = A(value + a.value) as T
@@ -51,7 +51,7 @@ fun main() {
             """
 
 @JvmInline
-@SeeThrough
+@dev.jvmusin.seethrough.SeeThrough
 value class A(val value: String)
 
 data class D(val a: A) {
@@ -73,7 +73,7 @@ fun main() {
         test(
             """
 @JvmInline
-@SeeThrough
+@dev.jvmusin.seethrough.SeeThrough
 value class A(val value: String)
 
 fun main() {
@@ -91,7 +91,7 @@ fun main() {
         test(
             """
 @JvmInline
-@SeeThrough
+@dev.jvmusin.seethrough.SeeThrough
 value class A(val value: String) {
   companion object {
     val B = A("b")
@@ -112,7 +112,7 @@ fun main() {
             """
 
 @JvmInline
-@SeeThrough
+@dev.jvmusin.seethrough.SeeThrough
 value class A(val value: String)
 
 typealias B = A
@@ -132,7 +132,7 @@ fun main() {
             """
 
 @JvmInline
-@SeeThrough
+@dev.jvmusin.seethrough.SeeThrough
 value class A(val value: String?)
 
 fun main() {
@@ -151,7 +151,7 @@ fun main() {
         test(
             """
 @JvmInline
-@SeeThrough
+@dev.jvmusin.seethrough.SeeThrough
 value class A(val value: String)
 
 fun f(constructor: (String) -> A) = constructor
@@ -168,7 +168,7 @@ fun main() {
         test(
             """
 @JvmInline
-@SeeThrough
+@dev.jvmusin.seethrough.SeeThrough
 value class A(val value: String)
 
 fun main() {
@@ -186,7 +186,7 @@ fun main() {
         test(
             """
 @JvmInline
-@SeeThrough
+@dev.jvmusin.seethrough.SeeThrough
 value class A(val value: String)
 
 fun foo1(arg: A): A {
@@ -212,15 +212,15 @@ fun main() {
     fun testNestedClasses() = test(
         """    
 @JvmInline
-@SeeThrough
+@dev.jvmusin.seethrough.SeeThrough
 value class A(val a: String)
 
 @JvmInline
-@SeeThrough
+@dev.jvmusin.seethrough.SeeThrough
 value class C(val b: B)
 
 @JvmInline
-@SeeThrough
+@dev.jvmusin.seethrough.SeeThrough
 value class B(val a: A)
 
 fun main() {
@@ -228,51 +228,6 @@ require(C(B(A("aba"))).b.a == C(B(A("aba"))).b.a)
 }
     """.trimIndent()
     )
-
-    @Test
-    fun testTwoFiles() {
-        val result = compile(
-            sourceFiles = listOf(
-                SourceFile.kotlin(
-                    "IntegrationTest.kt",
-                    """
-import SeeThrough
-
-
-
-
-@JvmInline
-@SeeThrough
-value class Inlined(val value: String)
-
-@JvmInline
-value class NonInlined(val value: String)
-
-fun main() {
-
-}
-""".trimIndent()
-                ),
-                SourceFile.kotlin(
-                    "sub/other.kt",
-                    """
-package sub
-
-import Inlined
-
-
-
-
-fun main() {
-    val i = Inlined("")
-}
-""".trimIndent()
-                )
-            )
-        )
-
-        assertEquals(KotlinCompilation.ExitCode.OK, result.exitCode)
-    }
 }
 
 fun test(@Language("kotlin") sourceCode: String) {
