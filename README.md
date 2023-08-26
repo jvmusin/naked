@@ -20,10 +20,11 @@ fun main() {
 
 ## Motivation
 
-The reason you want to do this is to avoid unnecessary boxing when value classes are used as generic or nullable types.
+The reason you may want to inline value classes entirely is to avoid unnecessary boxing when value classes are used as
+generic or nullable types.
 
-Applying just this annotation to the value class replaces all the real objects of this type with an underlying value –
-with a string in the example above.
+Applying `@SeeThrough` annotation to the value class causes all the real objects of this type to be replaced with a
+wrapped value – with a string in the example above.
 
 ## Usage
 
@@ -39,7 +40,8 @@ with a string in the example above.
 3. That's it! All usages of the annotated class will be replaced with usages of the wrapped value!
 
 You can disable the plugin using `seeThough` extension in `build.gradle.kts` file:
-```kts
+
+```kotlin
 seeThrough {
     enabled = false
 }
