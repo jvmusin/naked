@@ -1,5 +1,5 @@
-rootProject.name = "see-through"
+rootProject.name = "naked"
 
-include(":see-through-annotation")
-include(":see-through-gradle-plugin")
-include(":see-through-kotlin-plugin")
+include(":naked-annotation")
+include(":naked-gradle-plugin")
+include(":naked-kotlin-plugin")

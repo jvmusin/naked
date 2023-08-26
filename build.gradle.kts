@@ -1,5 +1,5 @@
 buildscript {
-    extra["kotlin_plugin_id"] = "dev.jvmusin.see-through"
+    extra["kotlin_plugin_id"] = "dev.jvmusin.naked"
 }
 
 plugins {
@@ -11,7 +11,7 @@ plugins {
 }
 
 allprojects {
-    group = "dev.jvmusin.seethrough"
+    group = "dev.jvmusin.naked"
     version = "0.0.1"
 }
 
