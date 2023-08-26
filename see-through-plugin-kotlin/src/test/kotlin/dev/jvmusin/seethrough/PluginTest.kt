@@ -19,6 +19,7 @@ value class A(val value: String)
 
 fun main() {
   require(A("a") == A("a"))
+  @Suppress("ReplaceCallWithBinaryOperator", "RedundantSuppression")
   require(A("a").equals(A("a")))
   require(A("a").hashCode() == 97)
   require(A("a").toString() == "a")
