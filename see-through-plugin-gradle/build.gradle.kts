@@ -31,12 +31,16 @@ buildConfig {
 }
 
 gradlePlugin {
+    website = "https://github.com/jvmusin/see-through"
+    vcsUrl = "https://github.com/jvmusin/see-through"
     plugins {
         create("seeThrough") {
             id = rootProject.extra["kotlin_plugin_id"] as String
-            displayName = "Kotlin Ir Plugin Template"
-            description = "Kotlin Ir Plugin Template"
+            displayName = "SeeThrough Kotlin Compiler Plugin"
+            description = "Kotlin Compiler Plugin which allows to inline value classes to avoid unnecessary boxing " +
+                    "when value classes are used as nullable or generic type."
             implementationClass = "dev.jvmusin.seethrough.SeeThroughGradlePlugin"
+            tags = listOf("kotlin", "kotlin-compiler", "kotlin-compiler-plugin", "kotlin-plugin", "annotation")
         }
     }
 }

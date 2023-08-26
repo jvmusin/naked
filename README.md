@@ -31,7 +31,7 @@ wrapped value – with a string in the example above.
 1. Register the plugin `dev.jvmusin.see-through` in the `plugins` section of your project's `build.gradle.kts` file:
     ```
     plugins {
-        ... your own plugins
+        ... your other plugins
         id("dev.jvmusin.see-through") version "0.0.1"
     }
     ```
