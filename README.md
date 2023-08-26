@@ -37,3 +37,10 @@ with a string in the example above.
 
 2. Annotate your value classes with `@dev.jvmusin.seethrough.SeeThrough`
 3. That's it! All usages of the annotated class will be replaced with usages of the wrapped value!
+
+You can disable the plugin using `seeThough` extension in `build.gradle.kts` file:
+```kts
+seeThrough {
+    enabled = false
+}
+```
