@@ -29,6 +29,11 @@ fun main() {
     }
 
     @Test
+    fun failing() {
+        error("fail")
+    }
+
+    @Test
     fun testTypeParameters() {
         test(
             """
