@@ -6,10 +6,10 @@ plugins {
     id("com.vanniktech.maven.publish") version "0.25.3"
 }
 
-java.toolchain.languageVersion = JavaLanguageVersion.of(11)
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 
 tasks.withType<KotlinCompile> {
-    kotlinOptions.jvmTarget = "11"
+    kotlinOptions.jvmTarget = "17"
 }
 
 mavenPublishing {
