@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
 buildscript {
     extra["kotlin_plugin_id"] = "io.github.jvmusin.naked"
 }
@@ -18,5 +20,9 @@ allprojects {
 subprojects {
     repositories {
         mavenCentral()
+    }
+
+    tasks.withType<KotlinCompile> {
+        kotlinOptions.jvmTarget = "17"
     }
 }

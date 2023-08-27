@@ -211,7 +211,7 @@ fun main() {
 
     @Test
     fun testNestedClasses() = test(
-        """    
+        """
 @JvmInline
 @io.github.jvmusin.naked.Naked
 value class A(val a: String)

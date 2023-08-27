@@ -11,7 +11,6 @@ plugins {
 java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 
 tasks.withType<KotlinCompile> {
-    kotlinOptions.jvmTarget = "17"
     kotlinOptions {
         freeCompilerArgs += "-Xopt-in=org.jetbrains.kotlin.backend.common.extensions.FirIncompatiblePluginAPI"
         freeCompilerArgs += "-Xopt-in=org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi"
@@ -26,7 +25,7 @@ dependencies {
 
     testImplementation(project(":naked-annotation"))
     testImplementation(kotlin("test-junit"))
-    testImplementation("org.jetbrains.kotlin:kotlin-compiler-embeddable") // also kotlin?
+    testImplementation(kotlin("compiler-embeddable"))
     testImplementation("com.github.tschuchortdev:kotlin-compile-testing:1.5.0")
 }
 

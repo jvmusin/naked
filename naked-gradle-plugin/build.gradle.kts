@@ -1,5 +1,3 @@
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-
 plugins {
     id("java-gradle-plugin")
     kotlin("jvm")
@@ -8,10 +6,6 @@ plugins {
 }
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(17)
-
-tasks.withType<KotlinCompile> {
-    kotlinOptions.jvmTarget = "17"
-}
 
 dependencies {
     implementation(kotlin("gradle-plugin-api"))
