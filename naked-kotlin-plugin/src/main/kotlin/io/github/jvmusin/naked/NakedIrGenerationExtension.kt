@@ -191,6 +191,11 @@ class WholeVisitor(
             }
         }
 
+        override fun visitClassNew(declaration: IrClass): IrStatement {
+            if (declaration.symbol == classType.classOrNull) return declaration
+            return super.visitClassNew(declaration)
+        }
+
         override fun visitDeclaration(declaration: IrDeclarationBase): IrStatement {
             declaration.remapTypes(typeRemapper)
             return super.visitDeclaration(declaration)
