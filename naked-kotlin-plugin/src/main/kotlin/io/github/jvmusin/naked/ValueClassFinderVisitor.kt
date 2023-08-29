@@ -75,6 +75,11 @@ class ValueClassFinderVisitor(
             "Anonymous initializers not allowed"
         }
 
+        val innerClasses = declaration.declarations.filterIsInstance<IrClass>()
+        check(innerClasses.isEmpty()) {
+            "Inner classes are not allowed, found ${innerClasses.map { it.name }}"
+        }
+
         if (errors.isNotEmpty()) {
             for (error in errors) messageCollector.reportError(declaration, "${declaration.name.asString()}: $error")
             return false

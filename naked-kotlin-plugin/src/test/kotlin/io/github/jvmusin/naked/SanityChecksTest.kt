@@ -106,4 +106,15 @@ value class A(val value: String) {
 }
        """.trimIndent(), "A: Anonymous initializers not allowed"
     )
+
+    @Test
+    fun innerClassesNotAllowed() = testExpectFail(
+        """
+@JvmInline
+@${ANNOTATION_FQN}
+value class A(val value: String) {
+  class B
+}
+        """.trimIndent(), "A: Inner classes are not allowed, found [B]"
+    )
 }
