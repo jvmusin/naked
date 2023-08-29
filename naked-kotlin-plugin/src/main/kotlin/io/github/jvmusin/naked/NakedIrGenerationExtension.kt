@@ -49,7 +49,6 @@ class NakedIrGenerationExtension(
             "Processing ${++fragmentsProcessed}th fragment, current is ${moduleFragment.name} with ${moduleFragment.files.size} files in it"
         )
 
-        messageCollector.report(CompilerMessageSeverity.INFO, moduleFragment.dump())
         messageCollector.report(CompilerMessageSeverity.INFO, "BEFORE:\n" + moduleFragment.dump())
         WholeVisitor(messageCollector, pluginContext, annotationClass).run(moduleFragment)
         messageCollector.report(CompilerMessageSeverity.INFO, "AFTER:\n" + moduleFragment.dump())
@@ -187,7 +186,8 @@ class WholeVisitor(
             // Do not edit change inside the class
             if (declaration.hasAnnotation(annotationClass)) return declaration
 
-            // TODO: Check if this is removable - this will block nested classes and companion objects
+            // TODO: Removing this method will remove the class entirely,
+            //  but avoiding this class blocks from visiting all the stuff inside - such as companion object or nested classes
 
             return super.visitClassNew(declaration)
         }
