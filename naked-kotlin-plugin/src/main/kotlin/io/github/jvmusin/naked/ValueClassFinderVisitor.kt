@@ -4,10 +4,7 @@ import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.descriptors.InlineClassRepresentation
 import org.jetbrains.kotlin.ir.IrElement
-import org.jetbrains.kotlin.ir.declarations.IrAnonymousInitializer
-import org.jetbrains.kotlin.ir.declarations.IrClass
-import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
-import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
+import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.IrConstructorSymbol
 import org.jetbrains.kotlin.ir.symbols.IrFunctionSymbol
@@ -56,6 +53,10 @@ class ValueClassFinderVisitor(
 
         check(declaration.constructors.count() == 1) {
             "Secondary constructors are not allowed"
+        }
+
+        check(declaration.constructors.none { it.valueParameters.any(IrValueParameter::hasDefaultValue) }) {
+            "Default value in constructor is not allowed"
         }
 
         check(declaration.superTypes == listOf(pluginContext.irBuiltIns.anyType)) {

@@ -117,4 +117,18 @@ value class A(val value: String) {
 }
         """.trimIndent(), "A: Inner classes are not allowed, found [B]"
     )
+
+    @Test
+    fun defaultValueInConstructorNotAllowed() = testExpectFail(
+        """
+@JvmInline
+@io.github.jvmusin.naked.Naked
+value class A(val data: String = "aba") // then generate function here as default
+
+fun main() {
+    require(A() == A("aba"))
+    require(A("caba") == A("caba"))
+}
+        """.trimIndent(), "A: Default value in constructor is not allowed"
+    )
 }
