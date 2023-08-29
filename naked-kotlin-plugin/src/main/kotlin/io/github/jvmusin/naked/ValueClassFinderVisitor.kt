@@ -2,22 +2,22 @@ package io.github.jvmusin.naked
 
 import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.declarations.IrClass
-import org.jetbrains.kotlin.ir.declarations.IrConstructor
-import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
+import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.IrConstructorSymbol
 import org.jetbrains.kotlin.ir.symbols.IrFunctionSymbol
 import org.jetbrains.kotlin.ir.types.IrType
-import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.isPrimitiveType
+import org.jetbrains.kotlin.ir.util.constructors
+import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.visitors.IrElementVisitorVoid
 import org.jetbrains.kotlin.ir.visitors.acceptChildrenVoid
 import org.jetbrains.kotlin.ir.visitors.acceptVoid
 
 class ValueClassFinderVisitor(
-    private val annotationClass: IrClassSymbol
+    private val annotationClass: IrClassSymbol,
 ) : IrElementVisitorVoid {
     private val result = mutableListOf<ClassThings>()
 
@@ -30,37 +30,20 @@ class ValueClassFinderVisitor(
         element.acceptChildrenVoid(this)
     }
 
-    inner class Diver(private val classThings: ClassThings) : IrElementVisitorVoid {
-        private inline fun update(action: ClassThings.() -> Unit) = classThings.action()
-
-        override fun visitElement(element: IrElement) {
-            element.acceptChildrenVoid(this)
-        }
-
-        override fun visitConstructor(declaration: IrConstructor) {
-            if (declaration.returnType == classThings.classType) {
-                update { constructorSymbol = declaration.symbol }
-                update { innerType = declaration.valueParameters.single().type }
-            }
-            super.visitConstructor(declaration)
-        }
-
-        override fun visitFunction(declaration: IrFunction) {
-            // TODO: Use some other method
-            if (declaration.name.asString().contains("get-")) {
-                update { getSymbol = declaration.symbol }
-            }
-            super.visitFunction(declaration)
-        }
-    }
-
     override fun visitClass(declaration: IrClass) {
         if (declaration.hasAnnotation(annotationClass)) {
             require(declaration.isValue)
-            val things = ClassThings(declaration.symbol)
-            declaration.acceptVoid(Diver(things))
-            result += things
-            return
+            val property = declaration.declarations.filterIsInstance<IrProperty>().single()
+            val getProperty = property.getter!!
+            val innerType = getProperty.returnType.also { require(!it.isPrimitiveType()) }
+            val constructor = declaration.constructors.single()
+            result += ClassThings(
+                declaration.symbol,
+                declaration.defaultType,
+                getProperty.symbol,
+                constructor.symbol,
+                innerType,
+            )
         }
         super.visitClass(declaration)
     }
@@ -77,10 +60,11 @@ class ValueClassFinderVisitor(
         return sorted
     }
 
-    inner class ClassThings(val classSymbol: IrClassSymbol) {
-        val classType: IrType = classSymbol.defaultType
-        var getSymbol: IrFunctionSymbol by OneTimeSetField()
-        var constructorSymbol: IrConstructorSymbol by OneTimeSetField()
-        var innerType: IrType by OneTimeSetField { !isPrimitiveType() }
-    }
+    data class ClassThings(
+        val classSymbol: IrClassSymbol,
+        val classType: IrType,
+        val getSymbol: IrFunctionSymbol,
+        val constructorSymbol: IrConstructorSymbol,
+        val innerType: IrType,
+    )
 }

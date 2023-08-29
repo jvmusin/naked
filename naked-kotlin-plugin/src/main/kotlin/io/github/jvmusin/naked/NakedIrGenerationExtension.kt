@@ -25,6 +25,7 @@ import org.jetbrains.kotlin.ir.symbols.IrFunctionSymbol
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.types.*
 import org.jetbrains.kotlin.ir.types.impl.buildSimpleType
+import org.jetbrains.kotlin.ir.types.impl.makeTypeProjection
 import org.jetbrains.kotlin.ir.util.TypeRemapper
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.hasAnnotation
@@ -35,16 +36,23 @@ import org.jetbrains.kotlin.name.Name
 
 class NakedIrGenerationExtension(
     private val messageCollector: MessageCollector,
-    private val annotationFqn: FqName,
 ) : IrGenerationExtension {
+    private var fragmentsProcessed = 0
+
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
-        val annotationClass = requireNotNull(pluginContext.referenceClass(annotationFqn)) {
-            "Annotation class $annotationFqn not found."
+        val annotationClass = requireNotNull(pluginContext.referenceClass(ANNOTATION_FQN)) {
+            "Annotation class $ANNOTATION_FQN not found."
         }
 
+        messageCollector.report(
+            CompilerMessageSeverity.INFO,
+            "Processing ${++fragmentsProcessed}th fragment, current is ${moduleFragment.name} with ${moduleFragment.files.size} files in it"
+        )
+
         messageCollector.report(CompilerMessageSeverity.INFO, moduleFragment.dump())
+        messageCollector.report(CompilerMessageSeverity.INFO, "BEFORE:\n" + moduleFragment.dump())
         WholeVisitor(messageCollector, pluginContext, annotationClass).run(moduleFragment)
-        messageCollector.report(CompilerMessageSeverity.INFO, moduleFragment.dump())
+        messageCollector.report(CompilerMessageSeverity.INFO, "AFTER:\n" + moduleFragment.dump())
     }
 }
 
@@ -55,6 +63,11 @@ class WholeVisitor(
 ) {
     fun run(moduleFragment: IrModuleFragment) {
         val classes = ValueClassFinderVisitor(annotationClass).findClasses(moduleFragment)
+
+        messageCollector.report(
+            CompilerMessageSeverity.INFO,
+            "Found ${classes.size} classes with annotation: ${classes.joinToString { it.classType.classFqName.toString() }} withing fragment ${moduleFragment.name}"
+        )
 
         for (classThings in classes) {
             val identityFunctionGenerator = IdentityFunctionGenerator(
@@ -162,6 +175,7 @@ class WholeVisitor(
                     arguments = arguments.map {
                         when (it) {
                             is IrType -> remapType(it) as IrTypeArgument
+                            is IrTypeProjection -> makeTypeProjection(remapType(it.type), it.variance)
                             else -> it
                         }
                     }
@@ -170,13 +184,22 @@ class WholeVisitor(
         }
 
         override fun visitClassNew(declaration: IrClass): IrStatement {
+            // Do not edit change inside the class
             if (declaration.hasAnnotation(annotationClass)) return declaration
+
+            // TODO: Check if this is removable - this will block nested classes and companion objects
+
             return super.visitClassNew(declaration)
         }
 
         override fun visitDeclaration(declaration: IrDeclarationBase): IrStatement {
             declaration.remapTypes(typeRemapper)
             return super.visitDeclaration(declaration)
+        }
+
+        override fun visitExpression(expression: IrExpression): IrExpression {
+            expression.remapTypes(typeRemapper)
+            return super.visitExpression(expression)
         }
     }
 
