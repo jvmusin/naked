@@ -84,6 +84,25 @@ fun main() {
 }
                 """.trimIndent()
             )
+
+            @Test
+            fun functionReceivesArray() = test(
+                """
+@JvmInline
+@${ANNOTATION_FQN}
+value class A(val value: String)
+
+fun f(a: Array<A>) {
+  require(a[0] == A("aba"))
+  a[0] = A("caba")
+  require(a[0] == A("caba"))
+}
+
+fun main() {
+  f(arrayOf(A("aba")))
+}
+            """.trimIndent()
+            )
         }
     }
 
@@ -166,6 +185,30 @@ fun main() {
   for (x in list) require(x == A("1"))
 }
                 """.trimIndent()
+            )
+
+            @Test
+            fun functionReceivesList() = test(
+                """
+@JvmInline
+@${ANNOTATION_FQN}
+value class A(val value: String)
+
+fun f(a: List<A>) {
+  require(a[0] == A("aba"))
+}
+
+fun f2(a: MutableList<A>) {
+  require(a[0] == A("aba"))
+  a[0] = A("caba")
+  require(a[0] == A("caba"))
+}
+
+fun main() {
+  f(listOf(A("aba")))
+  f2(mutableListOf(A("aba")))
+}
+            """.trimIndent()
             )
         }
     }
@@ -288,6 +331,29 @@ fun main() {
     require(k == 123)
     require(v == A("caba"))
   }
+}
+                """.trimIndent()
+            )
+
+            @Test
+            fun testWhenFunctionReceivesAMap() = test(
+                """
+@JvmInline
+@${ANNOTATION_FQN}
+value class A(val value: String)
+
+fun f(m: Map<A, A>) {
+  require(m[A("aba")] == A("caba"))
+}
+fun f2(m: MutableMap<A, A>) {
+  require(m[A("aba")] == A("caba"))
+  m[A("aba")] = A("daba")
+  require(m[A("aba")] == A("daba"))
+}
+
+fun main() {
+  f(mapOf(A("aba") to A("caba")))
+  f(mutableMapOf(A("aba") to A("caba")))
 }
                 """.trimIndent()
             )
