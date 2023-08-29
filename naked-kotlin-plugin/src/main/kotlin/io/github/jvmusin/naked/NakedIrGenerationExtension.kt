@@ -28,7 +28,6 @@ import org.jetbrains.kotlin.ir.types.impl.buildSimpleType
 import org.jetbrains.kotlin.ir.types.impl.makeTypeProjection
 import org.jetbrains.kotlin.ir.util.TypeRemapper
 import org.jetbrains.kotlin.ir.util.dump
-import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.remapTypes
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.name.FqName
@@ -61,7 +60,10 @@ class WholeVisitor(
     private val annotationClass: IrClassSymbol,
 ) {
     fun run(moduleFragment: IrModuleFragment) {
-        val classes = ValueClassFinderVisitor(annotationClass).findClasses(moduleFragment)
+        val classes = ValueClassFinderVisitor(annotationClass, pluginContext, messageCollector)
+            .findClasses(moduleFragment)
+
+        if (messageCollector.hasErrors()) return
 
         messageCollector.report(
             CompilerMessageSeverity.INFO,
@@ -143,14 +145,21 @@ class WholeVisitor(
             return super.visitConstructorCall(expression)
         }
 
+        private fun generateFunctionReference(expression: IrFunctionReference): IrFunctionReference {
+            return DeclarationIrBuilder(pluginContext, expression.symbol)
+                .irFunctionReference(
+                    expression.type,
+                    identityFunctionSymbol
+                )
+        }
+
         override fun visitFunctionReference(expression: IrFunctionReference): IrExpression {
             if (expression.symbol == constructorSymbol) {
-                val newFunctionReference = DeclarationIrBuilder(pluginContext, expression.symbol)
-                    .irFunctionReference(
-                        expression.type,
-                        identityFunctionSymbol
-                    )
-                return visitFunctionReference(newFunctionReference)
+                messageCollector.reportError(currentFile.fileEntry, expression, "Constructor reference is not allowed")
+            }
+            @Suppress("ConstantConditionIf") // Constructor reference doesn't work yet and this behavior is covered with tests
+            if (false) {
+                return visitFunctionReference(generateFunctionReference(expression))
             }
             return super.visitFunctionReference(expression)
         }
@@ -180,16 +189,6 @@ class WholeVisitor(
                     }
                 }
             }
-        }
-
-        override fun visitClassNew(declaration: IrClass): IrStatement {
-            // Do not edit change inside the class
-            if (declaration.hasAnnotation(annotationClass)) return declaration
-
-            // TODO: Removing this method will remove the class entirely,
-            //  but avoiding this class blocks from visiting all the stuff inside - such as companion object or nested classes
-
-            return super.visitClassNew(declaration)
         }
 
         override fun visitDeclaration(declaration: IrDeclarationBase): IrStatement {

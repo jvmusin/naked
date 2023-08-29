@@ -8,11 +8,7 @@ class ConstructorCallTest {
         """
 @JvmInline
 @${ANNOTATION_FQN}
-value class A(val value: String) {
-  init {
-    error("should never be executed")
-  }
-}
+value class A(val value: String)
 
 fun main() {
   require(A("aba") == A("aba"))
@@ -21,20 +17,16 @@ fun main() {
     )
 
     @Test
-    fun testReferenceCall() = test(
+    fun testReferenceCall() = testExpectFail(
         """
 @JvmInline
 @${ANNOTATION_FQN}
-value class A(val value: String) {
-  init {
-    error("should never be executed")
-  }
-}
+value class A(val value: String)
 
 fun main() {
   val constructor = ::A
   require(constructor("aba") == A("aba"))
 }
-        """.trimIndent()
+        """.trimIndent(), "^e: .*/sources/main.kt:5:20 \\(${ANNOTATION_FQN.shortName()}\\) Constructor reference is not allowed$".toRegex()
     )
 }

@@ -1,9 +1,9 @@
 package io.github.jvmusin.naked
 
-import org.junit.jupiter.api.Test
 import kotlin.test.Ignore
+import kotlin.test.Test
 
-@Ignore("Custom functions are not supported yet")
+@Ignore("Custom functions inside value classes are not allowed, covered with tests")
 class CustomFunctionsTest {
     @Test
     fun testImplicitReturnType() = test(
