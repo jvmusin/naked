@@ -12,7 +12,7 @@ mavenPublishing {
 
     signAllPublications()
 
-    coordinates(group.toString(), project.name, "$version-SNAPSHOT")
+    coordinates(group.toString(), project.name, "$version")
 
     pom {
         name = "Naked Kotlin Compiler Plugin Annotation"
