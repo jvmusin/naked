@@ -27,6 +27,6 @@ fun main() {
   val constructor = ::A
   require(constructor("aba") == A("aba"))
 }
-        """.trimIndent(), "^e: .*/sources/main.kt:5:20 \\(${ANNOTATION_FQN.shortName()}\\) Constructor reference is not allowed$".toRegex()
+        """.trimIndent(), "Constructor reference is not allowed"
     )
 }

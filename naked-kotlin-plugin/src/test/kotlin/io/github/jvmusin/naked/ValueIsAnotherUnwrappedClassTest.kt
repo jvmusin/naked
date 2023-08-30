@@ -4,7 +4,7 @@ import org.junit.jupiter.api.Test
 
 class ValueIsAnotherUnwrappedClassTest {
     @Test
-    fun test() = test(
+    fun test() = testExpectFail(
         """
 @JvmInline
 @${ANNOTATION_FQN}
@@ -21,6 +21,6 @@ value class B(val a: A)
 fun main() {
 require(C(B(A("aba"))).b.a == C(B(A("aba"))).b.a)
 }
-        """.trimIndent()
+        """.trimIndent(), "C: Sequentially nested inline value classes are not allowed"
     )
 }

@@ -7,6 +7,6 @@ repositories {
     mavenCentral()
 }
 
-naked {
-    enabled = true
+dependencies {
+    implementation(project(":api"))
 }

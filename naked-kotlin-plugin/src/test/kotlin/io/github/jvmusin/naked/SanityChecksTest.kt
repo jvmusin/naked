@@ -14,21 +14,13 @@ fun testExpectFail(@Language("kotlin") sourceCode: String, expectedErrorMessage:
     }
 }
 
-fun testExpectFail(@Language("kotlin") sourceCode: String, expectedErrorMessage: Regex) {
-    val result = compile(sourceFile = SourceFile.kotlin("main.kt", sourceCode))
-    Assertions.assertEquals(KotlinCompilation.ExitCode.COMPILATION_ERROR, result.exitCode)
-    assert(result.messages.lines().any { it matches expectedErrorMessage }) {
-        "Not found pattern '${expectedErrorMessage.pattern}' in the output. The output:\n${result.messages}"
-    }
-}
-
 class SanityChecksTest {
     @Test
     fun onlyValueClassCanBeAnnotated() = testExpectFail(
         """
 @${ANNOTATION_FQN}
 class A(val value: String)
-       """.trimIndent(), "A: Only value classes can be marked with the annotation $ANNOTATION_FQN"
+       """.trimIndent(), "A: This class is not an inline value class"
     )
 
     @Test
@@ -130,5 +122,22 @@ fun main() {
     require(A("caba") == A("caba"))
 }
         """.trimIndent(), "A: Default value in constructor is not allowed"
+    )
+
+    @Test
+    fun valueAsAnotherAnnotatedInlineClassNotAllowed() = testExpectFail(
+        """
+@JvmInline
+@io.github.jvmusin.naked.Naked
+value class I(val data: String)
+
+@JvmInline
+@io.github.jvmusin.naked.Naked
+value class A(val data: I)
+
+fun main() {
+    require(A(I("aba")).toString() == "aba")
+}
+        """.trimIndent(), "A: Sequentially nested inline value classes are not allowed"
     )
 }

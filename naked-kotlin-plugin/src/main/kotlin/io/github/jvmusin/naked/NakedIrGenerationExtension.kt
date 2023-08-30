@@ -1,142 +1,143 @@
 package io.github.jvmusin.naked
 
+import io.github.jvmusin.naked.MyMessageCollector.Companion.my
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
+import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.backend.js.utils.valueArguments
-import org.jetbrains.kotlin.ir.builders.*
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
-import org.jetbrains.kotlin.ir.declarations.IrClass
-import org.jetbrains.kotlin.ir.declarations.IrDeclarationBase
-import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
-import org.jetbrains.kotlin.ir.declarations.IrTypeParametersContainer
-import org.jetbrains.kotlin.ir.expressions.IrCall
+import org.jetbrains.kotlin.ir.builders.irBlockBody
+import org.jetbrains.kotlin.ir.builders.irFunctionReference
+import org.jetbrains.kotlin.ir.builders.irGet
+import org.jetbrains.kotlin.ir.builders.irReturn
+import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
+import org.jetbrains.kotlin.ir.expressions.IrDeclarationReference
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionReference
-import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.IrConstructorSymbol
 import org.jetbrains.kotlin.ir.symbols.IrFunctionSymbol
-import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.types.*
-import org.jetbrains.kotlin.ir.types.impl.buildSimpleType
-import org.jetbrains.kotlin.ir.types.impl.makeTypeProjection
 import org.jetbrains.kotlin.ir.util.TypeRemapper
-import org.jetbrains.kotlin.ir.util.dump
+import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.remapTypes
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
-import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.ir.visitors.IrElementVisitorVoid
+import org.jetbrains.kotlin.ir.visitors.acceptChildrenVoid
+import org.jetbrains.kotlin.ir.visitors.acceptVoid
 
 class NakedIrGenerationExtension(
     private val messageCollector: MessageCollector,
 ) : IrGenerationExtension {
-    private var fragmentsProcessed = 0
-
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
-        val annotationClass = requireNotNull(pluginContext.referenceClass(ANNOTATION_FQN)) {
-            "Annotation class $ANNOTATION_FQN not found."
+        if (pluginContext.referenceClass(ANNOTATION_FQN) == null) {
+            messageCollector.report(
+                CompilerMessageSeverity.ERROR,
+                "($NAKED_PLUGIN) Annotation class $ANNOTATION_FQN not found"
+            )
+            return
         }
 
-        messageCollector.report(
-            CompilerMessageSeverity.INFO,
-            "Processing ${++fragmentsProcessed}th fragment, current is ${moduleFragment.name} with ${moduleFragment.files.size} files in it"
-        )
-
-        messageCollector.report(CompilerMessageSeverity.INFO, "BEFORE:\n" + moduleFragment.dump())
-        WholeVisitor(messageCollector, pluginContext, annotationClass).run(moduleFragment)
-        messageCollector.report(CompilerMessageSeverity.INFO, "AFTER:\n" + moduleFragment.dump())
+        WholeVisitor(messageCollector.my(moduleFragment.name.asString()), pluginContext).run(moduleFragment)
     }
 }
 
 class WholeVisitor(
-    private val messageCollector: MessageCollector,
+    private val messageCollector: MyMessageCollector,
     private val pluginContext: IrPluginContext,
-    private val annotationClass: IrClassSymbol,
 ) {
     fun run(moduleFragment: IrModuleFragment) {
-        val classes = ValueClassFinderVisitor(annotationClass, pluginContext, messageCollector)
-            .findClasses(moduleFragment)
+        messageCollector.report { "Starting on module" }
 
-        if (messageCollector.hasErrors()) return
+        val classes = findAnnotatedClasses(moduleFragment)
+        classes.forEach { ValueClassValidator.validate(it, messageCollector) }
+        if (messageCollector.hasErrors()) {
+            messageCollector.report { "Build has errors, skipping" }
 
-        messageCollector.report(
-            CompilerMessageSeverity.INFO,
-            "Found ${classes.size} classes with annotation: ${classes.joinToString { it.classType.classFqName.toString() }} withing fragment ${moduleFragment.name}"
-        )
+            return
+        }
+//        classes.forEach { generateIdentityFunction(it) }
 
-        for (classThings in classes) {
-            val identityFunctionGenerator = IdentityFunctionGenerator(
-                messageCollector,
-                classThings.classSymbol,
-                classThings.innerType
+        val allClasses = ClassCollectorVisitor.findAllClasses(moduleFragment)
+        val classesThings = allClasses.mapNotNull { ClassThingsProvider.getClassThings(it, messageCollector) }
+        if (classesThings.isEmpty()) {
+            messageCollector.report { "No eligible classes found, skipping" }
+            return
+        }
+
+        messageCollector.report { "Will update usages of ${classesThings.map { it.classType.classFqName }}" }
+
+        moduleFragment.transformVoid(
+            ExternalDeclarationTypeTransformer(
+                classesThings,
+                messageCollector
             )
-            moduleFragment.transform(identityFunctionGenerator)
-            val identityFunctionSymbol = identityFunctionGenerator.identityFunctionSymbol
-
-            moduleFragment.transform(
+        )
+        for (classThings in classesThings) {
+            moduleFragment.transformVoid(
                 ConstructorCallTransformer(
-                    messageCollector,
                     classThings.constructorSymbol,
-                    identityFunctionSymbol
                 )
             )
-            moduleFragment.transform(
+
+            moduleFragment.transformVoid(
                 OverriddenFunctionCallTransformer(
                     classThings.getSymbol,
                     classThings.classType,
-                    classThings.innerType
+                    classThings.innerType,
+                    pluginContext
                 )
             )
 
-            moduleFragment.transform(
+            moduleFragment.transformVoid(
                 TypeRemapperTransformer(
                     classThings.classType,
                     classThings.innerType
                 )
             )
-            moduleFragment.transform(
-                TypeRemapperTransformer(
-                    classThings.classType.makeNullable(),
-                    classThings.innerType.makeNullable()
-                )
-            )
+        }
+
+        messageCollector.report { "Updated usages of ${classesThings.map { it.classType.classFqName }}" }
+    }
+
+    @Suppress("unused")
+    private fun generateIdentityFunction(irClass: IrClass): IrSimpleFunction {
+        val innerType = irClass.inlineClassRepresentation!!.underlyingType
+        return irClass.addFunction {
+            name = IDENTITY_FUNCTION_NAME
+            returnType = innerType
+            origin = IrDeclarationOrigin.GeneratedByPlugin(NAKED_PLUGIN)
+        }.also { f ->
+            val self = f.addValueParameter("self", innerType)
+            f.body = DeclarationIrBuilder(pluginContext, f.symbol).irBlockBody {
+                +irReturn(irGet(self))
+            }
         }
     }
 
-    inner class IdentityFunctionGenerator(
-        private val messageCollector: MessageCollector,
-        private val classSymbol: IrClassSymbol,
-        private val innerType: IrType,
-    ) : IrElementTransformerVoidWithContext() {
-        var identityFunctionSymbol by OneTimeSetField<IrSimpleFunctionSymbol>()
-        override fun visitClassNew(declaration: IrClass): IrStatement {
-            if (declaration.symbol == classSymbol) {
-                val identityFunction = declaration.addFunction {
-                    name = Name.identifier("identity")
-                    returnType = innerType
-                }.also { f ->
-                    val parameter = f.addValueParameter("self", innerType)
-                    f.body = DeclarationIrBuilder(pluginContext, f.symbol).irBlockBody {
-                        +irReturn(irGet(parameter))
-                    }
+    private fun findAnnotatedClasses(moduleFragment: IrModuleFragment): List<IrClass> {
+        val classes = mutableListOf<IrClass>()
+        moduleFragment.acceptVoid(object : IrElementVisitorVoid {
+            override fun visitElement(element: IrElement) = element.acceptChildrenVoid(this)
+
+            override fun visitClass(declaration: IrClass) {
+                if (declaration.hasAnnotation(ANNOTATION_FQN)) {
+                    classes += declaration
                 }
-                messageCollector.report(CompilerMessageSeverity.INFO, identityFunction.dump())
-                identityFunctionSymbol = identityFunction.symbol
+                super.visitClass(declaration)
             }
-            return super.visitClassNew(declaration)
-        }
+        })
+        return classes
     }
 
     inner class ConstructorCallTransformer(
-        private val messageCollector: MessageCollector,
         private val constructorSymbol: IrConstructorSymbol,
-        private val identityFunctionSymbol: IrFunctionSymbol,
     ) : IrElementTransformerVoidWithContext() {
         override fun visitConstructorCall(expression: IrConstructorCall): IrExpression {
             if (expression.symbol == constructorSymbol) {
@@ -145,7 +146,11 @@ class WholeVisitor(
             return super.visitConstructorCall(expression)
         }
 
-        private fun generateFunctionReference(expression: IrFunctionReference): IrFunctionReference {
+        @Suppress("unused")
+        private fun generateIdentityFunctionReference(
+            expression: IrFunctionReference,
+            identityFunctionSymbol: IrFunctionSymbol,
+        ): IrFunctionReference {
             return DeclarationIrBuilder(pluginContext, expression.symbol)
                 .irFunctionReference(
                     expression.type,
@@ -155,20 +160,71 @@ class WholeVisitor(
 
         override fun visitFunctionReference(expression: IrFunctionReference): IrExpression {
             if (expression.symbol == constructorSymbol) {
-                messageCollector.reportError(currentFile.fileEntry, expression, "Constructor reference is not allowed")
+                messageCollector.reportError(
+                    currentFile.fileEntry,
+                    expression
+                ) { "Constructor reference is not allowed" }
             }
-            @Suppress("ConstantConditionIf") // Constructor reference doesn't work yet and this behavior is covered with tests
-            if (false) {
-                return visitFunctionReference(generateFunctionReference(expression))
-            }
+//            if (expression.symbol == constructorSymbol) {
+//                return visitFunctionReference(generateIdentityFunctionReference(expression))
+//            }
             return super.visitFunctionReference(expression)
         }
     }
 
-    inner class TypeRemapperTransformer(
-        private val classType: IrType,
-        private val innerValueType: IrType,
+    class ExternalDeclarationTypeTransformer(
+        things: List<ClassThings>,
+        private val messageCollector: MyMessageCollector,
     ) : IrElementTransformerVoidWithContext() {
+        private val mapping = things.associate { it.classType to it.innerType }.let { map ->
+            map + map.toList().associate { it.first.makeNullable() to it.second.makeNullable() }
+        }
+        private val typeRemapper = MyTypeRemapper(mapping)
+        override fun visitDeclarationReference(expression: IrDeclarationReference): IrExpression {
+            if ((expression.symbol.owner as IrDeclaration).origin == IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB) {
+                val symbol = expression.symbol
+                if (typeRemapper.isRemappingNeeded(symbol.owner)) {
+                    val before = symbol.toString()
+                    typeRemapper.remapTypesInPlace(symbol.owner)
+                    val after = symbol.toString()
+                    messageCollector.report {
+                        "Remapped types for external declaration: {{{$before}}}   -->   {{{$after}}}"
+                    }
+                }
+            }
+            return super.visitDeclarationReference(expression)
+        }
+    }
+
+    class TypeRemapperTransformer(
+        private val classType: IrType,
+        innerValueType: IrType,
+    ) : IrElementTransformerVoidWithContext() {
+        private val myTypeRemapper = MyTypeRemapper(
+            mapOf(
+                classType to innerValueType,
+                classType.makeNullable() to innerValueType.makeNullable()
+            )
+        )
+
+        override fun visitClassNew(declaration: IrClass): IrStatement {
+            if (declaration.symbol == classType.classOrNull) return declaration
+            return super.visitClassNew(declaration)
+        }
+
+        override fun visitDeclaration(declaration: IrDeclarationBase): IrStatement {
+            myTypeRemapper.remapTypesInPlace(declaration)
+            return super.visitDeclaration(declaration)
+        }
+
+        override fun visitExpression(expression: IrExpression): IrExpression {
+            myTypeRemapper.remapTypesInPlace(expression)
+            return super.visitExpression(expression)
+        }
+    }
+
+    class ClassCollectorVisitor : IrElementTransformerVoidWithContext() {
+        private val visitedTypes = hashSetOf<IrType>()
         private val typeRemapper = object : TypeRemapper {
             override fun enterScope(irTypeParametersContainer: IrTypeParametersContainer) {
             }
@@ -177,23 +233,17 @@ class WholeVisitor(
             }
 
             override fun remapType(type: IrType): IrType {
-                if (type == classType) return innerValueType
+                if (!visitedTypes.add(type)) return type
                 if (type !is IrSimpleType) return type
-                return type.buildSimpleType {
-                    arguments = arguments.map {
-                        when (it) {
-                            is IrType -> remapType(it) as IrTypeArgument
-                            is IrTypeProjection -> makeTypeProjection(remapType(it.type), it.variance)
-                            else -> it
-                        }
+                for (it in type.arguments) {
+                    when (it) {
+                        is IrType -> remapType(it)
+                        is IrTypeProjection -> remapType(it.type)
+                        is IrStarProjection -> {}
                     }
                 }
+                return type
             }
-        }
-
-        override fun visitClassNew(declaration: IrClass): IrStatement {
-            if (declaration.symbol == classType.classOrNull) return declaration
-            return super.visitClassNew(declaration)
         }
 
         override fun visitDeclaration(declaration: IrDeclarationBase): IrStatement {
@@ -205,57 +255,25 @@ class WholeVisitor(
             expression.remapTypes(typeRemapper)
             return super.visitExpression(expression)
         }
-    }
 
-    inner class OverriddenFunctionCallTransformer(
-        private val getSymbol: IrFunctionSymbol,
-        private val sourceType: IrType,
-        private val innerType: IrType,
-    ) : IrElementTransformerVoidWithContext() {
-        private val replacements = run {
-            val replacedFunctionNames = arrayOf("hashCode", "toString", "equals")
-            val sourceType = sourceType.classFqName!!.asString()
-            val targetType = innerType.classFqName!!.asString()
-            fun fn(type: String, f: String) = pluginContext.referenceFunctions(FqName("${type}.${f}")).single()
-            replacedFunctionNames.associate { func ->
-                fn(sourceType, func) to fn(targetType, func)
+        companion object {
+            fun findAllClasses(irElement: IrElement): Set<IrClass> {
+                val visitor = ClassCollectorVisitor()
+                irElement.transformVoid(visitor)
+                return visitor.visitedTypes.mapNotNullTo(hashSetOf()) { it.getClass() }
             }
-        }
 
-        override fun visitCall(expression: IrCall): IrExpression {
-            if (expression.symbol == getSymbol) {
-                return visitExpression(expression.dispatchReceiver!!)
+            fun findAllTypes(irElement: IrElement): Set<IrType> {
+                val visitor = ClassCollectorVisitor()
+                irElement.transformVoid(visitor)
+                return visitor.visitedTypes
             }
-            replacements[expression.symbol]?.let { replacement ->
-                val replacedCall = DeclarationIrBuilder(pluginContext, currentScope!!.scope.scopeOwnerSymbol)
-                    .irCall(replacement).also { call ->
-                        call.dispatchReceiver = expression.dispatchReceiver
-                        repeat(expression.valueArgumentsCount) { arg ->
-                            call.putValueArgument(arg, expression.getValueArgument(arg))
-                        }
-                    }
-                return visitCall(replacedCall)
-            }
-            return super.visitCall(expression)
-        }
-
-        override fun visitFunctionReference(expression: IrFunctionReference): IrExpression {
-            replacements[expression.reflectionTarget]?.let { replacement ->
-                val newFunctionReference = DeclarationIrBuilder(pluginContext, expression.symbol)
-                    .irFunctionReference(
-                        expression.type,
-                        replacement
-                    )
-                return visitFunctionReference(newFunctionReference)
-            }
-            return super.visitFunctionReference(expression)
         }
     }
 
     private companion object {
-        private fun IrModuleFragment.transform(transformer: IrElementTransformerVoid) {
+        private fun IrElement.transformVoid(transformer: IrElementTransformerVoid) {
             transform(transformer, null)
         }
     }
 }
-

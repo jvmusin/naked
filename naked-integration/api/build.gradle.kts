@@ -6,7 +6,3 @@ plugins {
 repositories {
     mavenCentral()
 }
-
-naked {
-    enabled = true
-}

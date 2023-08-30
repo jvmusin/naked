@@ -3,7 +3,7 @@ package io.github.jvmusin.naked
 import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.SourceFile
 import org.intellij.lang.annotations.Language
-import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
+import org.jetbrains.kotlin.compiler.plugin.CompilerPluginRegistrar
 import org.junit.jupiter.api.Assertions.assertEquals
 
 fun test(@Language("kotlin") sourceCode: String) {
@@ -18,19 +18,19 @@ fun test(@Language("kotlin") sourceCode: String) {
 
 fun compile(
     sourceFiles: List<SourceFile>,
-    plugin: ComponentRegistrar = NakedComponentRegistrar(),
+    plugin: CompilerPluginRegistrar = NakedComponentRegistrar(),
 ): KotlinCompilation.Result {
     return KotlinCompilation().apply {
         sources = sourceFiles
         useIR = true
-        componentRegistrars = listOf(plugin)
+        compilerPluginRegistrars = listOf(plugin)
         inheritClassPath = true
     }.compile()
 }
 
 fun compile(
     sourceFile: SourceFile,
-    plugin: ComponentRegistrar = NakedComponentRegistrar(),
+    plugin: CompilerPluginRegistrar = NakedComponentRegistrar(),
 ): KotlinCompilation.Result {
     return compile(listOf(sourceFile), plugin)
 }

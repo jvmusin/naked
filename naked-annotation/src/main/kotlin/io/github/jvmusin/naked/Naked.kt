@@ -20,5 +20,5 @@ package io.github.jvmusin.naked
  * value class MyWrapper(val value: String)
  * ```
  */
-@Retention(AnnotationRetention.SOURCE)
+@Retention(AnnotationRetention.BINARY)
 annotation class Naked
