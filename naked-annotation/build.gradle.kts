@@ -5,7 +5,7 @@ plugins {
     id("com.vanniktech.maven.publish") version "0.25.3"
 }
 
-java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+java.toolchain.languageVersion = JavaLanguageVersion.of(11)
 
 mavenPublishing {
     publishToMavenCentral(SonatypeHost.S01)

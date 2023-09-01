@@ -14,7 +14,7 @@ plugins {
 
 allprojects {
     group = "io.github.jvmusin.naked"
-    version = "0.0.3"
+    version = "0.0.4"
 }
 
 subprojects {
@@ -23,6 +23,6 @@ subprojects {
     }
 
     tasks.withType<KotlinCompile> {
-        kotlinOptions.jvmTarget = "17"
+        kotlinOptions.jvmTarget = "11"
     }
 }

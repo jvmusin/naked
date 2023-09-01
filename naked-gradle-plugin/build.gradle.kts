@@ -5,7 +5,7 @@ plugins {
     id("com.gradle.plugin-publish")
 }
 
-java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+java.toolchain.languageVersion = JavaLanguageVersion.of(11)
 
 dependencies {
     implementation(kotlin("gradle-plugin-api"))
@@ -33,7 +33,7 @@ gradlePlugin {
             id = rootProject.extra["kotlin_plugin_id"] as String
             displayName = "Naked Kotlin Compiler Plugin"
             description = "Kotlin Compiler Plugin which allows to inline value classes to avoid unnecessary boxing " +
-                    "when value classes are used as nullable or generic type."
+                    "when value classes are used as nullable or generic type"
             implementationClass = "io.github.jvmusin.naked.NakedGradlePlugin"
             tags = listOf("kotlin", "kotlin-compiler", "kotlin-compiler-plugin", "kotlin-plugin", "annotation")
         }

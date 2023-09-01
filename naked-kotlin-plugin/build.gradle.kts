@@ -8,7 +8,7 @@ plugins {
     id("com.vanniktech.maven.publish") version "0.25.3"
 }
 
-java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+java.toolchain.languageVersion = JavaLanguageVersion.of(11)
 
 tasks.withType<KotlinCompile> {
     kotlinOptions {
@@ -48,7 +48,7 @@ mavenPublishing {
     pom {
         name = "Naked Kotlin Compiler Plugin"
         description =
-            "Kotlin Compiler Plugin which allows inlining value-class in Kotlin with just a single annotation."
+            "Kotlin Compiler Plugin which allows inlining value-classes in Kotlin with just a single annotation."
         inceptionYear = "2023"
         url = "https://github.com/jvmusin/naked"
         licenses {
