@@ -5,7 +5,7 @@ plugins {
     kotlin("jvm")
     kotlin("kapt")
     id("com.github.gmazzo.buildconfig")
-    id("com.vanniktech.maven.publish") version "0.25.3"
+    id("com.vanniktech.maven.publish") version "0.27.0"
 }
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(11)
